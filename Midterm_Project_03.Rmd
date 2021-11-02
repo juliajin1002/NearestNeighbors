@@ -267,5 +267,5 @@ ggplot(scholarship, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot
 anovaScholarship <- aov(log10(Amount)~Allocation_Subcategory, data=scholarship)
 xkabledply(anovaScholarship)
 ```
-The p-value is 0.677 > 0.05, so we cannot reject our null hypothesis, meaning we can say the mean of gift amount among different resources is the same.
+The p-value is 0.677 > 0.05, so we cannot reject our null hypothesis, meaning we can say the mean of donation among different resources is the same.
 
