@@ -38,6 +38,7 @@ summary(donation$Amount)
 boxplot(log(donation$Amount), col='blue', ylab="Gift Amount", title="University Donations")
 axis(side = 4)
 ```
+
 Obviously this is not normal.
 
 Remove any outliers and test normality based on different subcategories.
@@ -54,8 +55,19 @@ ggplot(donation2, aes(x=State, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+
 anovaState <- aov(log10(Amount)~State, data=donation2)
 xkabledply(anovaState)
 ```
-The p-value is close to 0, so we reject our null hypothesis, meaning we can say at least in one state, the mean of gift amount is different than in the other states.
 
+The p-value is close to 0, so we reject our null hypothesis, meaning we can say at least in one state, the mean of donation is different than in the other states.
+
+### Tukey
+```{r tukey, results = F}
+tukeyState <- TukeyHSD(anovaState)
+tukeyState
+```
+
+The full result is lengthy, so I will not display everything here. 
+But following pairwise comparisons have p-value less than the standard 0.05:
+NE - CO, NY - CO, TX - CO
+So we can say that the mean of donation in Colorado is different from that in Nebraska, New York and Texas.
 
 ### vs. College
 
@@ -67,7 +79,8 @@ ggplot(donation2, aes(x=College, y=log10(Amount)))+geom_boxplot(outlier.size = 2
 anovaCollege <- aov(log10(Amount)~College, data=donation2)
 xkabledply(anovaCollege)
 ```
-The p-value is 0.181 > 0.05, so we fail to reject the null hypothesis, meaning we can say the mean of gift amount among colleges are the same.
+
+The p-value is 0.181 > 0.05, so we fail to reject the null hypothesis, meaning we can say the mean of donation in different colleges are the same.
 
 ### vs. Year
 
@@ -79,7 +92,8 @@ ggplot(donation2, aes(x=Year, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+l
 anovaYear <- aov(log10(Amount)~Year, data=donation2)
 xkabledply(anovaYear)
 ```
-The p-value is 0.0925 > 0.05, so we fail to reject the null hypothesis, meaning we can say the mean of gift amount received in different years are the same.
+
+The p-value is 0.0925 > 0.05, so we fail to reject the null hypothesis, meaning we can say the mean of donations in each year are the same.
 
 ### vs. Allocation
 
@@ -91,7 +105,8 @@ ggplot(donation2, aes(x=Gift_Allocation, y=log10(Amount)))+geom_boxplot(outlier.
 anovaAllocation <- aov(log10(Amount)~Gift_Allocation, data=donation2)
 xkabledply(anovaAllocation)
 ```
-The p-value is 0.793 > 0.05, so we fail to reject the null hypothesis, meaning we can say the mean of gift amount with different allocations are the same.
+
+The p-value is 0.793 > 0.05, so we fail to reject the null hypothesis, meaning we can say the mean of donation received from different allocations are the same.
 
 Further subcategorize each allocation method.
 ```{r subcategory, results = T}
@@ -108,7 +123,8 @@ ggplot(campus_resource, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_box
 anovaCampus <- aov(log(Amount)~Allocation_Subcategory, data=campus_resource)
 xkabledply(anovaCampus)
 ```
-The p-value is 0.222 > 0.05, so we cannot reject our null hypothesis, meaning we can say the mean of gift amount among different resources are the same.
+
+The p-value is 0.222 > 0.05, so we cannot reject our null hypothesis, meaning we can say the mean of donation received from different campus resources are the same.
 
 ```{r boxplot_endowment, include = T}
 ggplot(endowment, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Gift amount vs. Endowment', x='Endowment', y='Amount (log10)')
@@ -118,7 +134,8 @@ ggplot(endowment, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot(o
 anovaEndowment <- aov(log10(Amount)~Allocation_Subcategory, data=endowment)
 xkabledply(anovaEndowment)
 ```
-The p-value is 0.850 > 0.05, so we cannot reject our null hypothesis, meaning we can say the mean of gift amount among different endowments are the same.
+
+The p-value is 0.850 > 0.05, so we cannot reject our null hypothesis, meaning we can say the mean of donation received from different endowments are the same.
 
 ```{r boxplot_scholarship, include = T}
 ggplot(scholarship, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Gift amount vs. Scholarship', x='Scholarship', y='Amount (log10)')
@@ -128,6 +145,7 @@ ggplot(scholarship, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot
 anovaScholarship <- aov(log10(Amount)~Allocation_Subcategory, data=scholarship)
 xkabledply(anovaScholarship)
 ```
+
 The p-value is 0.677 > 0.05, so we cannot reject our null hypothesis, meaning we can say the mean of gift amount among different resources is the same.
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
