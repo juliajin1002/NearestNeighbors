@@ -84,6 +84,7 @@ Year: year gift was allocated
 
 Propespec.ID - Id of recipient 
 
+Drop rows with NaN.
 ```{r check_is_na, results=T}
 sum(is.na(donation))
 ```
@@ -107,7 +108,7 @@ ggplot(donation, aes(x=Amount)) +
 
 Take the log10 of donation and we will have a much cleaner graph.
 ```{r histogram_clean_amount, results = T}
-ggplot(donation2, aes(x=Amount)) + 
+ggplot(donation, aes(x=Amount)) + 
   geom_histogram(color="blue", fill="lightblue", position="dodge", binwidth = 100) +   
   theme_bw() + 
   labs(x = "Amount Given in Dollars", 
