@@ -1,5 +1,5 @@
 ---
-title: "Midterm_Project_03"
+title: "Analyzing Donation to Universities in the US from 2010-2015"
 author: "Chiemeziem Oguayo, Rhys Leahy, Julia Jin, Patrick Junghenn"
 date: "11/2/2021"
 output: html_document
@@ -30,7 +30,7 @@ options(scientific=T, digits = 3)
 # use scipen=999 to prevent scientific notation at all times
 ```
 
-
+### Preprocess
 ```{r preprocess}
 donation <- read.csv(file='UniversityDonations.csv')
 donation$Year <- as.factor(donation$Year)
@@ -45,29 +45,53 @@ donation$City <- as.factor(donation$City)
 ### Data Dictionary
 
 Allocation sub_category: Donor Type
+
 AGR: College of Agriculture & Natural Science
+
 ALM: Alumni Association
+
 ANN: University Annual Fund
+
 ART: College of Arts & Sciences
+
 ATH: Athletics
+
 BIZ: College of Business
+
 COM: College of Communication Arts & Sciences
+
 DIV: Diversity Fund
+
 EDU: College of Education
+
 ENG: College of Engineering
+
 FCE: Faculty Chair Endowments
+
 HON: Honors Program
+
 ISF: In-state Scholarship Fund
+
 LIB: University Library
+
 MSF: Minority Scholarship Fund
+
 MSM: Campus Museums
+
 MUS: College of Music
+
 NAT: College of Natural Science
+
 NUR: College of Nursing
+
 PAR: Parents Association
+
 POL: College of Political Science
+
 RCR: Campus Recreations
+
 TST: Trustees Fund
+
 VET: College of Veterinary Medicine
 
 City and State: Location of the university the money was allocated to
@@ -84,7 +108,9 @@ Year: year gift was allocated
 
 Propespec.ID - Id of recipient 
 
-Drop rows with NaN.
+### Descriptive Data Analysis
+
+Drop rows with NaN if exist.
 ```{r check_is_na, results=T}
 sum(is.na(donation))
 ```
@@ -95,6 +121,8 @@ sd(donation$Amount)
 var(donation$Amount)
 mfv(donation$Amount) #most frequent values
 ```
+
+### Plots
 
 ```{r histogram_amount, results = T}
 ggplot(donation, aes(x=Amount)) + 
@@ -116,6 +144,7 @@ ggplot(donation, aes(x=Amount)) +
   ggtitle("Distribution of Donation Amounts - No Outliers") + 
   ggeasy::easy_center_title()
 ```
+
 Categorize donations based on what year they are given. Further subcategorize donation based on allocations.
 ```{r barchart_year, results = T}
 ggplot(donation, aes(fill=Gift_Allocation, y=Amount, x=Year)) + 
@@ -144,11 +173,12 @@ ggplot(donation, aes(fill=College, y=Amount, x=Year)) +
   ggtitle("Amount Donated by Year") + 
   ggeasy::easy_center_title() 
 ```
+
 ### ANOVA
 
 Obviously we can see from the histogram that donation is not normal.
 
-Remove any outliers.
+Remove any outliers if exist.
 ```{r remove_outliers, results=T}
 donation2 = outlierKD2(donation, Amount, rm=T, histogram = F)
 str(donation2)
@@ -158,7 +188,7 @@ We would like to see if the mean of donation is the same based on different subc
 
 ### vs. State
 
-Q: Is donation the same in different states?
+Q: Is the donation in different states the same?
 
 ```{r boxplot_state, include = T}
 loadPkg("ggplot2")
@@ -186,7 +216,7 @@ So we can say that the mean of donation in Colorado is different from that in Ne
 
 ### vs. College
 
-Q: Is donation that goes to different colleges the same?
+Q: Is the donation that goes to different colleges the same?
 
 ```{r boxplot_college, include = T}
 ggplot(donation2, aes(x=College, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. Colleges', x='College', y='Amount (log10)')
@@ -200,7 +230,7 @@ The p-value is 0.181 > 0.05, so we fail to reject the null hypothesis, meaning w
 
 ### vs. Year
 
-Q: Is donation received in each year the same?
+Q: Is the donation received in each year the same?
 
 ```{r boxplot_year, include = T}
 ggplot(donation2, aes(x=Year, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. Years', x='Year', y='Amount (log10)')
@@ -214,7 +244,7 @@ The p-value is 0.0925 > 0.05, so we fail to reject the null hypothesis, meaning 
 
 ### vs. Allocation
 
-Q: Is donation with different allocation method the same?
+Q: Is the donation with different allocation method the same?
 
 ```{r boxplot_allocation, include = T}
 ggplot(donation2, aes(x=Gift_Allocation, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. Allocations', x='Allocation', y='Amount (log10)')
@@ -236,7 +266,7 @@ scholarship <- subset(donation2, Gift_Allocation == 'Scholarship')
 
 ### Campus Resources
 
-Q: Is donation from different campus resources the same?
+Q: Is the donation from different campus resources the same?
 
 ```{r boxplot_campus, include = T}
 ggplot(campus_resource, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. Campus Resources', x='Resources', y='Amount (log10)')
@@ -250,7 +280,7 @@ The p-value is 0.222 > 0.05, so we cannot reject our null hypothesis, meaning we
 
 ### Endowment
 
-Q: Is donation of different endowments the same?
+Q: Is the donation of different endowments the same?
 
 ```{r boxplot_endowment, include = T}
 ggplot(endowment, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. Endowments', x='Endowment', y='Amount (log10)')
@@ -264,7 +294,7 @@ The p-value is 0.850 > 0.05, so we cannot reject our null hypothesis, meaning we
 
 ### Scholarship
 
-Q: Is donation from different scholarships the same?
+Q: Is the donation from different scholarships the same?
 
 ```{r boxplot_scholarship, include = T}
 ggplot(scholarship, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. Scholarships', x='Scholarship', y='Amount (log10)')
