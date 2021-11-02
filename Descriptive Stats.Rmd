@@ -1,0 +1,135 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+
+### Importing Data
+```{r}
+library(readr)
+UniversityDonations <- read.csv("/Users/chim/Downloads/UniversityDonations.csv")
+str(UniversityDonations)
+```
+
+```{r}
+UniversityDonations$Allocation_Subcategory <- as.factor(UniversityDonations$Allocation_Subcategory)
+UniversityDonations$City <- as.factor(UniversityDonations$City)
+UniversityDonations$College <- as.factor(UniversityDonations$College)
+UniversityDonations$Gift_Allocation <- as.factor(UniversityDonations$Gift_Allocation)
+UniversityDonations$Major <- as.factor(UniversityDonations$Major)
+UniversityDonations$State <- as.factor(UniversityDonations$State)
+str(UniversityDonations)
+```
+### Data Dictionary
+
+Allocation sub_category: Donor Type
+AGR: College of Agriculture & Natural Science
+ALM: Alumni Association
+ANN: University Annual Fund
+ART: College of Arts & Sciences
+ATH: Athletics
+BIZ: College of Business
+COM: College of Communication Arts & Sciences
+DIV: Diversity Fund
+EDU: College of Education
+ENG: College of Engineering
+FCE: Faculty Chair Endowments
+HON: Honors Program
+ISF: In-state Scholarship Fund
+LIB: University Library
+MSF: Minority Scholarship Fund
+MSM: Campus Museums
+MUS: College of Music
+NAT: College of Natural Science
+NUR: College of Nursing
+PAR: Parents Association
+POL: College of Political Science
+RCR: Campus Recreations
+TST: Trustees Fund
+VET: College of Veterinary Medicine
+
+City and State: Location of the university the money was allocated to
+
+Gift_Allocation: Form of donation/funds
+
+Major: Department 
+
+College: Discipline 
+
+Amount: amount of money allocated
+
+Year: year gift was allocated
+
+Propespec.ID - Id of recipient 
+
+
+
+```{r echo=TRUE}
+summary(UniversityDonations)
+```
+
+
+```{r}
+#removing outliers
+Donationsout <- boxplot(UniversityDonations$Amount, plot=FALSE)$out
+UniversityDonations <- UniversityDonations[-which(UniversityDonations$Amount %in% Donationsout)]
+```
+```{r}
+#Descriptive Stats
+
+library(modeest)
+
+summary(UniversityDonations$Amount)
+print(mean(UniversityDonations$Amount))
+sd(UniversityDonations$Amount)
+var(UniversityDonations$Amount)
+mfv(UniversityDonations$Amount)
+```
+
+```{r}
+by(UniversityDonations, UniversityDonations$Gift_Allocation, summary)
+```
+
+###EDA
+
+```{r}
+Amount_bp <- ggplot(UniversityDonations, aes(x= Gift_Allocation, y = Amount, fill = Gift_Allocation)) +
+  geom_boxplot() + labs(title = "Amount Boxplot", x = "Gift_Allocation", y = "Amount")
+Amount_bp + ylim(0, 50000)
+
+```
+
+```{r}
+
+ggAm <- ggplot(UniversityDonations) + geom_qq(aes(sample = Amount))
+ggAm + ylim(0, 50000)
+
+
+```
+
+```{r}
+Amount_hs <- ggplot(UniversityDonations, aes(x = Amount)) + geom_histogram(color = "black", fill = "red") + labs(title = "Amount Hisyogram", x = "Amount", y = "Frequency") + xlim(0,50000)
+Amount_hs
+
+```
+
+
+### Geophraic cover of Data
+
+```{r}
+install.packages('usmap')
+library(usmap)
+library(ggplot2)
+names(UniversityDonations)[names(UniversityDonations) == 'State'] <- 'state'
+
+#We don't have to include this
+
+plot_usmap(data = UniversityDonations, values = "Amount", color = "black", ylim = (50000)) + 
+  scale_fill_continuous(name = "Amount by  Location", low = "white", high = "red", limits = c(0,50000), label = scales::comma) + 
+  theme(legend.position = "right")
+
+```
