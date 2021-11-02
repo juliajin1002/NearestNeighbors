@@ -161,7 +161,7 @@ Q: Is donation the same in different states?
 
 ```{r boxplot_state, include = T}
 loadPkg("ggplot2")
-ggplot(donation2, aes(x=State, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Gift amount vs. State', x='State', y='Amount (log10)')
+ggplot(donation2, aes(x=State, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. States', x='State', y='Amount (log10)')
 ```
 
 ```{r anova_state, results = T}
@@ -188,7 +188,7 @@ So we can say that the mean of donation in Colorado is different from that in Ne
 Q: Is donation that goes to different colleges the same?
 
 ```{r boxplot_college, include = T}
-ggplot(donation2, aes(x=College, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Gift amount vs. College', x='College', y='Amount (log10)')
+ggplot(donation2, aes(x=College, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. Colleges', x='College', y='Amount (log10)')
 ```
 
 ```{r anova_college, results=T}
@@ -202,7 +202,7 @@ The p-value is 0.181 > 0.05, so we fail to reject the null hypothesis, meaning w
 Q: Is donation received in each year the same?
 
 ```{r boxplot_year, include = T}
-ggplot(donation2, aes(x=Year, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Gift amount vs. Year', x='Year', y='Amount (log10)')
+ggplot(donation2, aes(x=Year, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. Years', x='Year', y='Amount (log10)')
 ```
 
 ```{r anova_year, results=T}
@@ -216,7 +216,7 @@ The p-value is 0.0925 > 0.05, so we fail to reject the null hypothesis, meaning 
 Q: Is donation with different allocation method the same?
 
 ```{r boxplot_allocation, include = T}
-ggplot(donation2, aes(x=Gift_Allocation, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Gift amount vs. Allocation', x='Allocation', y='Amount (log10)')
+ggplot(donation2, aes(x=Gift_Allocation, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. Allocations', x='Allocation', y='Amount (log10)')
 ```
 
 ```{r anova_allocation, results = T}
@@ -238,7 +238,7 @@ scholarship <- subset(donation2, Gift_Allocation == 'Scholarship')
 Q: Is donation from different campus resources the same?
 
 ```{r boxplot_campus, include = T}
-ggplot(campus_resource, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Gift amount vs. Campus Resources', x='Resource', y='Amount (log10)')
+ggplot(campus_resource, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. Campus Resources', x='Resources', y='Amount (log10)')
 ```
 
 ```{r anova_campus, results = T}
@@ -252,7 +252,7 @@ The p-value is 0.222 > 0.05, so we cannot reject our null hypothesis, meaning we
 Q: Is donation of different endowments the same?
 
 ```{r boxplot_endowment, include = T}
-ggplot(endowment, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Gift amount vs. Endowment', x='Endowment', y='Amount (log10)')
+ggplot(endowment, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. Endowments', x='Endowment', y='Amount (log10)')
 ```
 
 ```{r anova_endowment, results = T}
@@ -266,7 +266,7 @@ The p-value is 0.850 > 0.05, so we cannot reject our null hypothesis, meaning we
 Q: Is donation from different scholarships the same?
 
 ```{r boxplot_scholarship, include = T}
-ggplot(scholarship, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Gift amount vs. Scholarship', x='Scholarship', y='Amount (log10)')
+ggplot(scholarship, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. Scholarships', x='Scholarship', y='Amount (log10)')
 ```
 
 ```{r anova_scholarship, results = T}
