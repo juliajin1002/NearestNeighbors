@@ -1,0 +1,299 @@
+---
+title: "Midterm_Project_03"
+author: "Chiemeziem Oguayo, Rhys Leahy, Julia Jin, Patrick Junghenn"
+date: "11/2/2021"
+output: html_document
+---
+
+```{r init, include=F}
+# The package "ezids" (EZ Intro to Data Science) includes a lot of the helper functions we developed for the course. 
+# Some of the frequently used functions are loadPkg(), xkabledply(), xkablesummary(), uzscale(), etc.
+# Once installed, load the library.
+library(ezids)
+library(dplyr)
+library(ggplot2)
+library(modeest)
+library(ggeasy)
+```
+
+
+```{r setup, include=FALSE}
+# some of common options (and the defaults) are: 
+# include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right', 
+# knitr::opts_chunk$set(warning = F, results = "markup", message = F)
+knitr::opts_chunk$set(warning = F, results = "hide", message = F)
+# knitr::opts_chunk$set(include = F)
+# knitr::opts_chunk$set(echo = TRUE)
+options(scientific=T, digits = 3) 
+# options(scipen=9, digits = 3) 
+# ‘scipen’: integer. A penalty to be applied when deciding to print numeric values in fixed or exponential notation.  Positive values bias towards fixed and negative towards scientific notation: fixed notation will be preferred unless it is more than ‘scipen’ digits wider.
+# use scipen=999 to prevent scientific notation at all times
+```
+
+
+```{r preprocess}
+donation <- read.csv(file='UniversityDonations.csv')
+donation$Year <- as.factor(donation$Year)
+donation$State <- as.factor(donation$State)
+donation$Allocation_Subcategory <- as.factor(donation$Allocation_Subcategory)
+donation$College <- as.factor(donation$College)
+donation$Gift_Allocation <- as.factor(donation$Gift_Allocation)
+donation$Major <- as.factor(donation$Major)
+donation$City <- as.factor(donation$City)
+```
+
+### Data Dictionary
+
+Allocation sub_category: Donor Type
+AGR: College of Agriculture & Natural Science
+ALM: Alumni Association
+ANN: University Annual Fund
+ART: College of Arts & Sciences
+ATH: Athletics
+BIZ: College of Business
+COM: College of Communication Arts & Sciences
+DIV: Diversity Fund
+EDU: College of Education
+ENG: College of Engineering
+FCE: Faculty Chair Endowments
+HON: Honors Program
+ISF: In-state Scholarship Fund
+LIB: University Library
+MSF: Minority Scholarship Fund
+MSM: Campus Museums
+MUS: College of Music
+NAT: College of Natural Science
+NUR: College of Nursing
+PAR: Parents Association
+POL: College of Political Science
+RCR: Campus Recreations
+TST: Trustees Fund
+VET: College of Veterinary Medicine
+
+City and State: Location of the university the money was allocated to
+
+Gift_Allocation: Form of donation/funds
+
+Major: Department 
+
+College: Discipline 
+
+Amount: amount of money allocated
+
+Year: year gift was allocated
+
+Propespec.ID - Id of recipient 
+
+```{r check_is_na, results=T}
+sum(is.na(donation))
+```
+
+```{r y-variable, results = T}
+summary(donation$Amount)
+sd(donation$Amount)
+var(donation$Amount)
+mfv(donation$Amount) #most frequent values
+```
+
+```{r histogram_amount, results = T}
+ggplot(donation, aes(x=Amount)) + 
+  geom_histogram(color="red", fill="red", position="dodge", binwidth = 50) +   
+  theme_bw() + 
+  labs(x = "Amount Given in Dollars", 
+       y = "Count of Unique Donations") + 
+  ggtitle("Distribution of All Donation Amounts") + 
+  ggeasy::easy_center_title()
+```
+
+Take the log10 of donation and we will have a much cleaner graph.
+```{r histogram_clean_amount, results = T}
+ggplot(donation2, aes(x=Amount)) + 
+  geom_histogram(color="blue", fill="lightblue", position="dodge", binwidth = 100) +   
+  theme_bw() + 
+  labs(x = "Amount Given in Dollars", 
+       y = "Count of Unique Donations") + 
+  ggtitle("Distribution of Donation Amounts - No Outliers") + 
+  ggeasy::easy_center_title()
+```
+Categorize donations based on what year they are given. Further subcategorize donation based on allocations.
+```{r barchart_year, results = T}
+ggplot(donation, aes(fill=Gift_Allocation, y=Amount, x=Year)) + 
+  geom_bar(position="stack", stat="identity") +
+  scale_y_continuous(labels=scales::dollar_format()) +
+  theme_bw() +
+  scale_fill_brewer(palette = "Dark2") +
+  guides(fill = guide_legend(title = "Allocation")) +
+  labs(x = "Year", 
+       y = "Total Amount Donated") + 
+  ggtitle("Amount Donated by Year") + 
+  ggeasy::easy_center_title() 
+```
+
+We can also subcategorize donation based on which college the money goes to.
+
+```{r barchart_year_college, results = T}
+ggplot(donation, aes(fill=College, y=Amount, x=Year)) + 
+  geom_bar(position="stack", stat="identity") +
+  scale_y_continuous(labels=scales::dollar_format()) +
+  theme_bw() +
+  scale_fill_brewer(palette = "Paired") +
+  guides(fill = guide_legend(title = "College")) +
+  labs(x = "Year", 
+       y = "Total Amount Donated") + 
+  ggtitle("Amount Donated by Year") + 
+  ggeasy::easy_center_title() 
+```
+### ANOVA
+
+Obviously we can see from the histogram that donation is not normal.
+
+Remove any outliers.
+```{r remove_outliers, results=T}
+donation2 = outlierKD2(donation, Amount, rm=T, histogram = F)
+str(donation2)
+```
+
+We would like to see if the mean of donation is the same based on different subcategories.
+
+### vs. State
+
+Q: Is donation the same in different states?
+
+```{r boxplot_state, include = T}
+loadPkg("ggplot2")
+ggplot(donation2, aes(x=State, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Gift amount vs. State', x='State', y='Amount (log10)')
+```
+
+```{r anova_state, results = T}
+anovaState <- aov(log10(Amount)~State, data=donation2)
+xkabledply(anovaState)
+```
+The p-value is close to 0, so we reject our null hypothesis, meaning we can say at least in one state, the mean of donation is different than in the other states.
+
+### post hoc Tukey
+```{r Tukey, results = F}
+tukeyState <- TukeyHSD(anovaState)
+tukeyState
+```
+
+The full result is lengthy, so I will not display everything here. 
+
+But following pairwise comparisons have p-value smaller than the standard 0.05:
+NE - CO, NY - CO, TX - CO
+So we can say that the mean of donation in Colorado is different from that in Nebraska, New York and Texas.
+
+
+### vs. College
+
+Q: Is donation that goes to different colleges the same?
+
+```{r boxplot_college, include = T}
+ggplot(donation2, aes(x=College, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Gift amount vs. College', x='College', y='Amount (log10)')
+```
+
+```{r anova_college, results=T}
+anovaCollege <- aov(log10(Amount)~College, data=donation2)
+xkabledply(anovaCollege)
+```
+The p-value is 0.181 > 0.05, so we fail to reject the null hypothesis, meaning we can say the mean of donation that goes to different colleges is the same.
+
+### vs. Year
+
+Q: Is donation received in each year the same?
+
+```{r boxplot_year, include = T}
+ggplot(donation2, aes(x=Year, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Gift amount vs. Year', x='Year', y='Amount (log10)')
+```
+
+```{r anova_year, results=T}
+anovaYear <- aov(log10(Amount)~Year, data=donation2)
+xkabledply(anovaYear)
+```
+The p-value is 0.0925 > 0.05, so we fail to reject the null hypothesis, meaning we can say the mean of donation received in different years are the same.
+
+### vs. Allocation
+
+Q: Is donation with different allocation method the same?
+
+```{r boxplot_allocation, include = T}
+ggplot(donation2, aes(x=Gift_Allocation, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Gift amount vs. Allocation', x='Allocation', y='Amount (log10)')
+```
+
+```{r anova_allocation, results = T}
+anovaAllocation <- aov(log10(Amount)~Gift_Allocation, data=donation2)
+xkabledply(anovaAllocation)
+```
+The p-value is 0.793 > 0.05, so we fail to reject the null hypothesis, meaning we can say the mean of donation with different allocations are the same.
+
+Further subcategorize each allocation method.
+
+```{r subcategory, results = T}
+campus_resource <- subset(donation2, Gift_Allocation=='Campus_Resource')
+endowment <- subset(donation2, Gift_Allocation=='Endowment')
+scholarship <- subset(donation2, Gift_Allocation == 'Scholarship')
+```
+
+### Campus Resources
+
+Q: Is donation from different campus resources the same?
+
+```{r boxplot_campus, include = T}
+ggplot(campus_resource, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Gift amount vs. Campus Resources', x='Resource', y='Amount (log10)')
+```
+
+```{r anova_campus, results = T}
+anovaCampus <- aov(log(Amount)~Allocation_Subcategory, data=campus_resource)
+xkabledply(anovaCampus)
+```
+The p-value is 0.222 > 0.05, so we cannot reject our null hypothesis, meaning we can say the mean of donation among different resources are the same.
+
+### Endowment
+
+Q: Is donation of different endowments the same?
+
+```{r boxplot_endowment, include = T}
+ggplot(endowment, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Gift amount vs. Endowment', x='Endowment', y='Amount (log10)')
+```
+
+```{r anova_endowment, results = T}
+anovaEndowment <- aov(log10(Amount)~Allocation_Subcategory, data=endowment)
+xkabledply(anovaEndowment)
+```
+The p-value is 0.850 > 0.05, so we cannot reject our null hypothesis, meaning we can say the mean of donation among different endowments are the same.
+
+### Scholarship
+
+Q: Is donation from different scholarships the same?
+
+```{r boxplot_scholarship, include = T}
+ggplot(scholarship, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Gift amount vs. Scholarship', x='Scholarship', y='Amount (log10)')
+```
+
+```{r anova_scholarship, results = T}
+anovaScholarship <- aov(log10(Amount)~Allocation_Subcategory, data=scholarship)
+xkabledply(anovaScholarship)
+```
+The p-value is 0.677 > 0.05, so we cannot reject our null hypothesis, meaning we can say the mean of donation among different resources is the same.
+
+
+### ANOVA for all
+
+There is only one numeric variable, 'amount', so cant use two sided t tests.
+
+```{r anova_all, results=T}
+anova_all <- aov(log10(Amount) ~ Gift_Allocation + Allocation_Subcategory + City +
+                   College + Year + Major + State, data = donation2)
+summary.aov(anova_all)
+```
+
+ANOVA reveals that significant variables are year and major. All other variables appear to be quite insignificant.
+
+### ChiSquare
+# - Major vs Year
+```{r chiSquare, results=T}
+table(donation2$City, donation2$Year)
+major_v_year_chi <- chisq.test(donation2$City, donation2$Year)
+major_v_year_chi
+```
+
+Major and year, the only statistically significant variables, are independent
