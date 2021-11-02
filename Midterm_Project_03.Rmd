@@ -12,6 +12,8 @@ output: html_document
 library(ezids)
 library(dplyr)
 library(ggplot2)
+library(modeest)
+library(ggeasy)
 ```
 
 
@@ -33,7 +35,105 @@ options(scientific=T, digits = 3)
 donation <- read.csv(file='UniversityDonations.csv')
 donation$Year <- as.factor(donation$Year)
 donation$State <- as.factor(donation$State)
+donation$Allocation_Subcategory <- as.factor(donation$Allocation_Subcategory)
+donation$College <- as.factor(donation$College)
+donation$Gift_Allocation <- as.factor(donation$Gift_Allocation)
+donation$Major <- as.factor(donation$Major)
+```
+
+### Data Dictionary
+
+Allocation sub_category: Donor Type
+AGR: College of Agriculture & Natural Science
+ALM: Alumni Association
+ANN: University Annual Fund
+ART: College of Arts & Sciences
+ATH: Athletics
+BIZ: College of Business
+COM: College of Communication Arts & Sciences
+DIV: Diversity Fund
+EDU: College of Education
+ENG: College of Engineering
+FCE: Faculty Chair Endowments
+HON: Honors Program
+ISF: In-state Scholarship Fund
+LIB: University Library
+MSF: Minority Scholarship Fund
+MSM: Campus Museums
+MUS: College of Music
+NAT: College of Natural Science
+NUR: College of Nursing
+PAR: Parents Association
+POL: College of Political Science
+RCR: Campus Recreations
+TST: Trustees Fund
+VET: College of Veterinary Medicine
+
+City and State: Location of the university the money was allocated to
+
+Gift_Allocation: Form of donation/funds
+
+Major: Department 
+
+College: Discipline 
+
+Amount: amount of money allocated
+
+Year: year gift was allocated
+
+Propespec.ID - Id of recipient 
+
+```{r y-variable, results = T}
 summary(donation$Amount)
+sd(donation$Amount)
+var(donation$Amount)
+mfv(donation$Amount) #most frequent values
+```
+
+```{r histogram_amount, results = T}
+ggplot(donation, aes(x=Amount)) + 
+  geom_histogram(color="red", fill="red", position="dodge", binwidth = 50) +   
+  theme_bw() + 
+  labs(x = "Amount Given in Dollars", 
+       y = "Count of Unique Donations") + 
+  ggtitle("Distribution of All Donation Amounts") + 
+  ggeasy::easy_center_title()
+```
+
+```{r histogram_clean_amount, results = T}
+ggplot(donation2, aes(x=Amount)) + 
+  geom_histogram(color="blue", fill="lightblue", position="dodge", binwidth = 100) +   
+  theme_bw() + 
+  labs(x = "Amount Given in Dollars", 
+       y = "Count of Unique Donations") + 
+  ggtitle("Distribution of Donation Amounts - No Outliers") + 
+  ggeasy::easy_center_title()
+```
+
+```{r barchart_year, results = T}
+ggplot(donation, aes(fill=Gift_Allocation, y=Amount, x=Year)) + 
+  geom_bar(position="stack", stat="identity") +
+  scale_y_continuous(labels=scales::dollar_format()) +
+  theme_bw() +
+  scale_fill_brewer(palette = "Dark2") +
+  guides(fill = guide_legend(title = "Allocation")) +
+  labs(x = "Year", 
+       y = "Total Amount Donated") + 
+  ggtitle("Amount Donated by Year") + 
+  ggeasy::easy_center_title() 
+```
+
+```{r barchart_year_college, results = T}
+ggplot(donation, aes(fill=College, y=Amount, x=Year)) + 
+  geom_bar(position="stack", stat="identity") +
+  scale_y_continuous(labels=scales::dollar_format()) +
+  theme_bw() +
+  scale_fill_brewer(palette = "Paired") +
+  guides(fill = guide_legend(title = "College")) +
+  labs(x = "Year", 
+       y = "Total Amount Donated") + 
+  ggtitle("Amount Donated by Year") + 
+  ggeasy::easy_center_title() 
 ```
 
 ```{r boxplot, include = T}
