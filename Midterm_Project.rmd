@@ -138,8 +138,10 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 ggplot(donation, aes(x=Amount)) + 
   geom_histogram(color="red", fill="red", position="dodge", binwidth = 50) +   
   theme_bw() + 
-  labs(title = "Distribution of Donation Amounts", x = "Amount Given in Dollars", 
-       y = "Count of Unique Donations")
+  labs(x = "Amount Given in Dollars", 
+       y = "Count of Unique Donations") + 
+  ggtitle("Distribution of All Donation Amounts") + 
+  ggeasy::easy_center_title()
 ```
 
 ```{r histogram_clean_amount, results = T}
@@ -152,11 +154,28 @@ ggplot(donation2, aes(x=Amount)) +
   ggeasy::easy_center_title()
 ```
 
-```{r histogram_clean_by_group, results = T}
-donation2 %>% mutate()
-ggplot(donation2, aes(x=Amount)) + 
-  geom_histogram(color="blue", fill="lightblue", position="dodge", binwidth = 100) +   
-  theme_bw() + 
-  labs(title = "Distribution of Donation Amounts", x = "Amount Given in Dollars", 
-       y = "Count of Unique Donations")
+```{r barchart_year, results = T}
+ggplot(donation, aes(fill=Gift_Allocation, y=Amount, x=Year)) + 
+  geom_bar(position="stack", stat="identity") +
+  scale_y_continuous(labels=scales::dollar_format()) +
+  theme_bw() +
+  scale_fill_brewer(palette = "Dark2") +
+  guides(fill = guide_legend(title = "Allocation")) +
+  labs(x = "Year", 
+       y = "Total Amount Donated") + 
+  ggtitle("Amount Donated by Year") + 
+  ggeasy::easy_center_title() 
+```
+
+```{r barchart_year_college, results = T}
+ggplot(donation, aes(fill=College, y=Amount, x=Year)) + 
+  geom_bar(position="stack", stat="identity") +
+  scale_y_continuous(labels=scales::dollar_format()) +
+  theme_bw() +
+  scale_fill_brewer(palette = "Paired") +
+  guides(fill = guide_legend(title = "College")) +
+  labs(x = "Year", 
+       y = "Total Amount Donated") + 
+  ggtitle("Amount Donated by Year") + 
+  ggeasy::easy_center_title() 
 ```
