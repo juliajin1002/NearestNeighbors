@@ -1,7 +1,7 @@
 ---
 title: "Midterm_Project_03"
-author: "Julia Jin"
-date: "11/1/2021"
+author: "Chiemeziem Oguayo, Rhys Leahy, Julia Jin, Patrick Junghenn"
+date: "11/2/2021"
 output: html_document
 ---
 
