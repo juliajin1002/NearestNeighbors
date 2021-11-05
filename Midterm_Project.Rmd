@@ -32,6 +32,8 @@ options(scientific=T, digits = 3)
 
 
 ```{r preprocess}
+donation <- donation %>% rename(Allocation_Subcategory = "ï..Allocation_Subcategory")
+
 donation <- read.csv(file='UniversityDonations.csv')
 donation$Year <- as.factor(donation$Year)
 donation$State <- as.factor(donation$State)
@@ -95,6 +97,22 @@ var(donation$Amount)
 mfv(donation$Amount) #most frequent values
 ```
 
+```{r qq_fulldata, results = T}
+qqnorm(donation$Amount)
+qqline(donation$Amount, col= "steelblue", lwd = 2)
+```
+
+Remove any outliers.
+```{r remove_outliers, results=T}
+donation2 = outlierKD2(donation, Amount, rm=T, histogram = F)
+str(donation2)
+```
+
+```{r qq_no_outliers, results = T}
+qqnorm(donation2$Amount)
+qqline(donation2$Amount, col= "steelblue", lwd = 2)
+```
+
 ```{r histogram_amount, results = T}
 ggplot(donation, aes(x=Amount)) + 
   geom_histogram(color="red", fill="red", position="dodge", binwidth = 50) +   
@@ -105,6 +123,7 @@ ggplot(donation, aes(x=Amount)) +
   ggeasy::easy_center_title()
 ```
 
+We would like to see if the mean of donation is the same based on different subcategories.
 Take the log10 of donation and we will have a much cleaner graph.
 ```{r histogram_clean_amount, results = T}
 ggplot(donation2, aes(x=Amount)) + 
@@ -114,6 +133,23 @@ ggplot(donation2, aes(x=Amount)) +
        y = "Count of Unique Donations") + 
   ggtitle("Distribution of Donation Amounts - No Outliers") + 
   ggeasy::easy_center_title()
+```
+```{r histogram_log_ammount, results = T}
+log_donation <- donation %>% mutate(log_Amount = log(Amount))
+
+ggplot(log_donation, aes(x=log_Amount)) + 
+  geom_histogram(color="white", fill="blue", position="dodge", binwidth = .5) +   
+  theme_bw() + 
+  labs(x = "Log of the Amount Given in Dollars", 
+       y = "Count of Unique Donations") + 
+  ggtitle("Distribution of the Log of Donation Amounts") + 
+  ggeasy::easy_center_title()
+```
+
+```{r qq_no_outliers, results = T}
+qqnorm(log_donation$Amount)
+qqline(log_donation$Amount, col= "steelblue", lwd = 2)
+
 ```
 Categorize donations based on what year they are given. Further subcategorize donation based on allocations.
 ```{r barchart_year, results = T}
@@ -125,7 +161,7 @@ ggplot(donation, aes(fill=Gift_Allocation, y=Amount, x=Year)) +
   guides(fill = guide_legend(title = "Allocation")) +
   labs(x = "Year", 
        y = "Total Amount Donated") + 
-  ggtitle("Amount Donated by Year") + 
+  ggtitle("Amount Donated by Year and Allocation") + 
   ggeasy::easy_center_title() 
 ```
 
@@ -140,20 +176,13 @@ ggplot(donation, aes(fill=College, y=Amount, x=Year)) +
   guides(fill = guide_legend(title = "College")) +
   labs(x = "Year", 
        y = "Total Amount Donated") + 
-  ggtitle("Amount Donated by Year") + 
+  ggtitle("Amount Donated by Year and College") + 
   ggeasy::easy_center_title() 
 ```
 ### ANOVA
 
 Obviously we can see from the histogram that donation is not normal.
 
-Remove any outliers.
-```{r remove_outliers, results=T}
-donation2 = outlierKD2(donation, Amount, rm=T, histogram = F)
-str(donation2)
-```
-
-We would like to see if the mean of donation is the same based on different subcategories.
 
 ### vs. State
 
