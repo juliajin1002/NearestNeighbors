@@ -440,7 +440,8 @@ major_v_year_chi <- chisq.test(donation2$City, donation2$Year)
 major_v_year_chi
 ```
 
-Our chi-square test indicates that the statistically significant variables, major and year, are independent
+Major and year, the only statistically significant variables, are independent. In other words, knowing the Year a donation was made does not give any information about the City the school resides. Similarly, knowing the City where the school is does not give any information about the Year the donation was made.
+
 
 
 ### Conclusion
