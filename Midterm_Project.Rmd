@@ -442,3 +442,5 @@ As we proceeded with hypothesis analysis, we can confirm the answers for our SMA
 ### Source
 
 Tableau Public https://public.tableau.com/en-us/s/resources
+
+How COVID-19 Affected Higher Education Fundraising, Future Forecasts, and Fundraising Strategies. (2021, April 14). WEALTHENGINE. https://www.wealthengine.com/how-covid-19-affected-higher-education-fundraising-future-forecasts-and-fundraising-strategies/
