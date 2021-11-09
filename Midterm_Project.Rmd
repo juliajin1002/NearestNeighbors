@@ -33,9 +33,10 @@ options(scientific=T, digits = 3)
 ## Introduction
 
 
-In a span of a few months, the COVID-19 pandemic caused by the coronavirus radically transformed the lives of many and ultimately changed the way various industries, businesses, and/or sectors have functioned. Among those affected by the pandemic have been colleges universities, specifically college advancement and fundraising.  As the pandemic swept the world, the higher education institutions were forced to deal with numerous issues surrounding income losses (Wealthengine).  One issue was a loss of income due to virtual learning. With education and classes being remote, most on-campus housing arrangements were vacated. And due to a lack of students on campus, any activity that would’ve otherwise gained income from students being on campus was now rendered obsolete.  To combat this issue, colleges have to adopt new methods of procuring funds.  One method that has been cited as being effective is through adopting new donor engagement strategies (Wealthengine). Understanding which factors have driven donations in the past could help universities better target likely donors can help improve fundraising and help mitigate or recover income loss moving forward. 
+In a span of a few months, the COVID-19 pandemic caused by the coronavirus radically transformed the lives of many and ultimately changed the way various industries, businesses, and/or sectors have functioned. Among those affected by the pandemic have been colleges universities, specifically college advancement and fundraising.  As the pandemic swept the world, the higher education institutions were forced to deal with numerous issues surrounding income losses (How COVID-19 Affected Higher Education, 2021).  One issue was a loss of income due to virtual learning. With education and classes being remote, most on-campus housing arrangements were vacated. And due to a lack of students on campus, any activity that would’ve otherwise gained income from students being on campus was now rendered obsolete.  To combat this issue, colleges have to adopt new methods of procuring funds.  One method that has been cited as being effective is through adopting new donor engagement strategies (How COVID-19 Affected Higher Education, 2021). Understanding which factors have driven donations in the past could help universities better target likely donors can help improve fundraising and help mitigate or recover income loss moving forward. 
 
-With that in mind, this project aimed to determine what those factors could be.  To do this, a data set called “University Advancement, Donations, and Giving” was obtained from Tableau. The dataset has 3914 observations across nine variables. This dataset is limited as it does not explore various macro and micro-level variables such as environmental(political-socio) influences, endowment, population, private or public standing, type of school (undergraduate, graduate, professional) that could have helped inform our analysis. Nonetheless, insights were able to be drawn from the nine variables provided in the dataset. 
+With that in mind, this project aimed to determine what those factors could be.  To do this, a data set called “University Advancement, Donations, and Giving” was obtained from Tableau. The data set has 3914 observations across nine variables. This data set is limited as it does not explore various macro and micro-level variables such as environmental(political-sociological) influences, endowment, population, private or public standing, type of school (undergraduate, graduate, professional) that could have helped inform our analysis. Nonetheless, insights were able to be drawn from the nine variables provided in the data set. 
+
 
 ## Description of Data
 
@@ -47,6 +48,8 @@ Using the data, this project sought to determine what factors affected the amoun
 donation <- read.csv(file='UniversityDonations.csv')
 str(donation)
 ```
+
+Before our exploratory data analysis, it was necessary to change all variables but donation amount to factors as they were categorical variables and it was necessary to remove any outliars. In addition, the contents of the 'Allocation sub_category' column were abbreviated as the contents were too long.  For our exploratory data analysis, we ignored the 'Prospect.ID' column as they are variables with no relation to the donation amount. And we ran the donation amount through a logarithmic function to allow for better visualizations and plots.
 
 Preprocess the data. Convert the following columns to factors:
 Year, State, Allocation_Subcategory, College, Gift_Allocation, Major, City
@@ -125,7 +128,7 @@ Amount: amount of money allocated
 
 Year: year gift was allocated
 
-Propespec.ID - Id of recipient 
+Prospect.ID - Id of recipient 
 
 ### Descriptive Data Analysis
 
@@ -196,7 +199,10 @@ qqnorm(donation2$Amount)
 qqline(donation2$Amount, col= "steelblue", lwd = 2)
 ```
 
-Categorize donations based on what year they are given. Further categorize donation based on allocations methods.
+Categorize donation based on the year it was received. Within each year, further categorize donation based on allocations methods.
+
+The proportion of each allocation of each year is about the same, roughly 1:2:2 for Campus_Resource, Endowment and Scholarship respectively.
+The total amount received increased each year except in 2012. The amount received as scholarship follows the trend of total amount received, which increased in 2011, decreased in 2012 and increased each year since 2013. The amount received as endowment is roughly the same in each year between 2010 and 2014 with a noticeable increase in 2015. The amount received as campus resources oscillated more significantly. It stayed about the same in 2011, decreased in 2012, increased again in 2013, followed by another decrease in 2014 and finished with a major increase in 2015.
 
 ```{r barchart_year,echo=F}
 ggplot(donation2, aes(fill=Gift_Allocation, y=Amount, x=Year)) + 
@@ -211,7 +217,9 @@ ggplot(donation2, aes(fill=Gift_Allocation, y=Amount, x=Year)) +
   ggeasy::easy_center_title() 
 ```
 
-We can also categorize donation based on which college the money goes to.
+We can also categorize donation within each year based on which college the money goes to.
+
+Most colleges receive about the same amount every year. Colleges with noticeable variations each year are AGR, ART, NAT and SOC. These four also happen to be the four colleges with the most money received every year.
 
 ```{r barchart_year_college,echo=F}
 ggplot(donation2, aes(fill=College, y=Amount, x=Year)) + 
@@ -412,7 +420,9 @@ Difference in sample size is the likely explanation behind the discrepancy of th
 
 ### ANOVA for all
 
-There is only one numeric variable, 'amount', so cant use two sided t tests.
+Let's perform an ANOVA test on all columns (except Propect_ID).
+
+There is only one numeric variable, 'amount', so can't use two sided t tests.
 
 ```{r anova_all, results=T}
 anova_all <- aov(log10(Amount) ~ Gift_Allocation + Allocation_Subcategory + City +
@@ -423,14 +433,14 @@ summary.aov(anova_all)
 ANOVA reveals that significant variables are year and major. All other variables appear to be quite insignificant.
 
 ### ChiSquare
-# - Major vs Year
+
 ```{r chiSquare, results=T}
 table(donation2$City, donation2$Year)
 major_v_year_chi <- chisq.test(donation2$City, donation2$Year)
 major_v_year_chi
 ```
 
-Major and year, the only statistically significant variables, are independent. In other words, knowing the Year a donation was made does not give any information about the City the school resides. Similarly, knowing the City where the school is does not give any information about the Year the donation was made. 
+Our chi-square test indicates that the statistically significant variables, major and year, are independent
 
 
 ### Conclusion
@@ -442,3 +452,5 @@ As we proceeded with hypothesis analysis, we can confirm the answers for our SMA
 ### Source
 
 Tableau Public https://public.tableau.com/en-us/s/resources
+
+How COVID-19 Affected Higher Education Fundraising, Future Forecasts, and Fundraising Strategies. (2021, April 14). WEALTHENGINE. https://www.wealthengine.com/how-covid-19-affected-higher-education-fundraising-future-forecasts-and-fundraising-strategies/
