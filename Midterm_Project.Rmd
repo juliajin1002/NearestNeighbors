@@ -1,6 +1,6 @@
 ---
-title: "Midterm Project - Nearest Neighbours"
-author: "Chiemeziem Oguayo, Rhys Leahy, Julia Jin, Patrick Junghenn"
+title: "US University Donations from 2010 - 2015"
+author: "Chiemeziem Oguayo, Rhys Leahy, Chaoran Jin (Julia), Patrick Junghenn"
 date: "11/09/2021"
 output: html_document
 ---
