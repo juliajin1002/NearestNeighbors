@@ -1,0 +1,99 @@
+---
+title: "bank_marketing.rmd"
+author: "Rhys, Julia, Chim, Pat"
+date: "12/3/2021"
+output: html_document
+---
+
+
+
+```{r init, include=FALSE}
+library(ezids)
+library(tidyverse)
+library(janitor)
+library(skimr)
+library(pROC)
+library(chisq.posthoc.test)
+knitr::opts_chunk$set(warning = F, results = "hide", message = F)
+options(scientific=T, digits = 3) 
+```
+
+
+Read in data. Skim shows that there are no NAs. 
+```{r load, results=TRUE}
+bank <- read_csv("bank.csv") %>% 
+  row_to_names(row_number = 1)
+
+skim(bank)
+```
+
+```{r clean, results=TRUE}
+bank <- bank %>% mutate(job = as.factor(job),
+                        marital = as.factor(marital), 
+                        education = as.factor(education),
+                        contact = as.factor(contact),
+                        month = as.factor(month),
+                        poutcome = as.factor(poutcome),
+                        y = as.factor(y)) %>% 
+  mutate_if(is.character, as.numeric)
+
+skim(bank)
+
+```
+
+```{r summary, results=TRUE}
+summary <- bank %>% group_by(poutcome) %>% summarize(count = n())
+summary
+```
+```{r age, results=TRUE}
+bank %>%
+  ggplot() + 
+  geom_boxplot(aes(y, age))
+
+t_test <- t.test(age ~ y, data = bank)
+t_test
+
+```
+```{r balance, results=TRUE}
+bank %>%
+  ggplot() + 
+  geom_boxplot(aes(y, balance))
+
+t_test <- t.test(age ~ y, data = bank)
+t_test
+
+```
+
+```{r job, results=TRUE}
+
+job <- table(bank$job, bank$y)
+chisq_test <- chisq.test(job)
+posthoc <- chisq.posthoc.test(job)
+
+
+chisq_test
+posthoc
+```
+
+```{r marital, results=TRUE}
+
+marital <- table(bank$marital, bank$y)
+chisq_test <- chisq.test(marital)
+posthoc <- chisq.posthoc.test(marital)
+
+
+chisq_test
+posthoc
+```
+
+```{r model, results=TRUE}
+
+bank_logit <- glm(y ~ age + job + marital + balance, data = bank, family = "binomial")
+summary(bank_logit)
+
+probs <- predict(bank_logit, type="response")
+h <- roc(y~probs, data = bank)
+plot(h)
+
+```
+
