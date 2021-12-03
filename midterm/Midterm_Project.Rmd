@@ -1,0 +1,457 @@
+---
+title: "US University Donations from 2010 - 2015"
+author: "Chiemeziem Oguayo, Rhys Leahy, Chaoran Jin (Julia), Patrick Junghenn"
+date: "11/09/2021"
+output: html_document
+---
+
+```{r init, include=F}
+# The package "ezids" (EZ Intro to Data Science) includes a lot of the helper functions we developed for the course. 
+# Some of the frequently used functions are loadPkg(), xkabledply(), xkablesummary(), uzscale(), etc.
+# Once installed, load the library.
+library(ezids)
+library(dplyr)
+library(ggplot2)
+library(modeest)
+library(ggeasy)
+```
+
+
+```{r setup, include=FALSE}
+# some of common options (and the defaults) are: 
+# include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right', 
+# knitr::opts_chunk$set(warning = F, results = "markup", message = F)
+knitr::opts_chunk$set(warning = F, results = "hide", message = F)
+# knitr::opts_chunk$set(include = F)
+# knitr::opts_chunk$set(echo = TRUE)
+options(scientific=T, digits = 3) 
+# options(scipen=9, digits = 3) 
+# ‘scipen’: integer. A penalty to be applied when deciding to print numeric values in fixed or exponential notation.  Positive values bias towards fixed and negative towards scientific notation: fixed notation will be preferred unless it is more than ‘scipen’ digits wider.
+# use scipen=999 to prevent scientific notation at all times
+```
+
+## Introduction
+
+
+In a span of a few months, the COVID-19 pandemic caused by the coronavirus radically transformed the lives of many and ultimately changed the way various industries, businesses, and/or sectors have functioned. Among those affected by the pandemic have been colleges universities, specifically college advancement and fundraising.  As the pandemic swept the world, the higher education institutions were forced to deal with numerous issues surrounding income losses (How COVID-19 Affected Higher Education, 2021).  One issue was a loss of income due to virtual learning. With education and classes being remote, most on-campus housing arrangements were vacated. And due to a lack of students on campus, any activity that would’ve otherwise gained income from students being on campus was now rendered obsolete.  To combat this issue, colleges have to adopt new methods of procuring funds.  One method that has been cited as being effective is through adopting new donor engagement strategies (How COVID-19 Affected Higher Education, 2021). Understanding which factors have driven donations in the past could help universities better target likely donors can help improve fundraising and help mitigate or recover income loss moving forward. 
+
+With that in mind, this project aimed to determine what those factors could be.  To do this, a data set called “University Advancement, Donations, and Giving” was obtained from Tableau. The data set has 3914 observations across nine variables. This data set is limited as it does not explore various macro and micro-level variables such as environmental(political-sociological) influences, endowment, population, private or public standing, type of school (undergraduate, graduate, professional) that could have helped inform our analysis. Nonetheless, insights were able to be drawn from the nine variables provided in the data set. 
+
+
+## Description of Data
+
+# Source Data
+
+Using the data, this project sought to determine what factors affected the amount of money donated to universities from 2010 - 2015. The donation amount will be compared across the nine variables and tested to see if a difference exists. As mentioned before, the dataset was obtained from Tableau's sample data and required minimal preprocessing. 
+
+```{r}
+donation <- read.csv(file='UniversityDonations.csv')
+str(donation)
+```
+
+Before our exploratory data analysis, it was necessary to change all variables but donation amount to factors as they were categorical variables and it was necessary to remove any outliars. In addition, the contents of the 'Allocation sub_category' column were abbreviated as the contents were too long.  For our exploratory data analysis, we ignored the 'Prospect.ID' column as they are variables with no relation to the donation amount. And we ran the donation amount through a logarithmic function to allow for better visualizations and plots.
+
+Preprocess the data. Convert the following columns to factors:
+Year, State, Allocation_Subcategory, College, Gift_Allocation, Major, City
+
+```{r preprocess}
+donation$Year <- as.factor(donation$Year)
+donation$State <- as.factor(donation$State)
+donation$Allocation_Subcategory <- as.factor(donation$Allocation_Subcategory)
+donation$College <- as.factor(donation$College)
+donation$Gift_Allocation <- as.factor(donation$Gift_Allocation)
+donation$Major <- as.factor(donation$Major)
+donation$City <- as.factor(donation$City)
+```
+
+### Data Dictionary
+
+Allocation sub_category: Donor Type
+
+AGR: College of Agriculture & Natural Science
+
+ALM: Alumni Association
+
+ANN: University Annual Fund
+
+ART: College of Arts & Sciences
+
+ATH: Athletics
+
+BIZ: College of Business
+
+COM: College of Communication Arts & Sciences
+
+DIV: Diversity Fund
+
+EDU: College of Education
+
+ENG: College of Engineering
+
+FCE: Faculty Chair Endowments
+
+HON: Honors Program
+
+ISF: In-state Scholarship Fund
+
+LIB: University Library
+
+MSF: Minority Scholarship Fund
+
+MSM: Campus Museums
+
+MUS: College of Music
+
+NAT: College of Natural Science
+
+NUR: College of Nursing
+
+PAR: Parents Association
+
+POL: College of Political Science
+
+RCR: Campus Recreations
+
+TST: Trustees Fund
+
+VET: College of Veterinary Medicine
+
+City and State: Location of the university the money was allocated to
+
+Gift_Allocation: Form of donation/funds
+
+Major: Department 
+
+College: Discipline 
+
+Amount: amount of money allocated
+
+Year: year gift was allocated
+
+Prospect.ID - Id of recipient 
+
+### Descriptive Data Analysis
+
+First, check if there are any rows with NaN, and if so, drop them.
+
+```{r check_is_na,echo=F}
+sum(is.na(donation))
+```
+
+A brief overview of the dataset. Our target variable or y-variable here is Amount.
+
+The minimum is 8 while the maximum is 455821. 
+
+The mean of the dataset is 6350, indicating that the dataset is negative skewed, as further indicated by the histogram below.
+
+The standard deviation is 9235 and the variance is 85282085, which are both quite large, indicating that the data points are very spread out wide from the mean, and from one another.
+
+```{r y-variable,echo=F}
+summary(donation$Amount)
+sd(donation$Amount)
+var(donation$Amount)
+mfv(donation$Amount) #most frequent values
+```
+
+```{r histogram_amount,echo=F}
+ggplot(donation, aes(x=Amount)) + 
+  geom_histogram(color="red", fill="red", position="dodge", binwidth = 50) +   
+  theme_bw() + 
+  labs(x = "Amount Given in Dollars", 
+       y = "Count of Unique Donations") + 
+  ggtitle("Distribution of All Donation Amounts") + 
+  ggeasy::easy_center_title()
+```
+
+Take the log10 of donation and we will have a much cleaner graph.
+
+```{r histogram_clean_amount, echo=F}
+log_donation <- donation %>% mutate(log_Amount = log10(Amount))
+ggplot(log_donation, aes(x=log_Amount)) + 
+  geom_histogram(color="white", fill="blue", position="dodge", binwidth = .5) +   
+  theme_bw() + 
+  labs(x = "Log of the Amount Given in Dollars", 
+       y = "Count of Unique Donations") + 
+  ggtitle("Distribution of the Log10 of Donation Amounts") + 
+  ggeasy::easy_center_title()
+```
+
+### QQ-plot
+
+The QQ-plot indicates that most of the outliers lie on the lower end of the distribution (as you would imagine, $8).
+
+```{r qq_fulldata, echo=F}
+qqnorm(log10(donation$Amount))
+qqline(log10(donation$Amount), col= "steelblue", lwd = 2)
+```
+
+Remove any outliers before any further analysis.
+
+```{r remove_outliers,echo=F}
+donation2 = outlierKD2(donation, Amount, rm=T, histogram = F)
+str(donation2)
+```
+
+Sketch a new QQ-plot without outliers.
+
+```{r qq_no_outliers,echo=F}
+qqnorm(donation2$Amount)
+qqline(donation2$Amount, col= "steelblue", lwd = 2)
+```
+
+Categorize donation based on the year it was received. Within each year, further categorize donation based on allocations methods.
+
+The proportion of each allocation of each year is about the same, roughly 1:2:2 for Campus_Resource, Endowment and Scholarship respectively.
+The total amount received increased each year except in 2012. The amount received as scholarship follows the trend of total amount received, which increased in 2011, decreased in 2012 and increased each year since 2013. The amount received as endowment is roughly the same in each year between 2010 and 2014 with a noticeable increase in 2015. The amount received as campus resources oscillated more significantly. It stayed about the same in 2011, decreased in 2012, increased again in 2013, followed by another decrease in 2014 and finished with a major increase in 2015.
+
+```{r barchart_year,echo=F}
+ggplot(donation2, aes(fill=Gift_Allocation, y=Amount, x=Year)) + 
+  geom_bar(position="stack", stat="identity") +
+  scale_y_continuous(labels=scales::dollar_format()) +
+  theme_bw() +
+  scale_fill_brewer(palette = "Dark2") +
+  guides(fill = guide_legend(title = "Allocation")) +
+  labs(x = "Year", 
+       y = "Total Amount Donated") + 
+  ggtitle("Amount Donated by Year and Allocation") + 
+  ggeasy::easy_center_title() 
+```
+
+We can also categorize donation within each year based on which college the money goes to.
+
+Most colleges receive about the same amount every year. Colleges with noticeable variations each year are AGR, ART, NAT and SOC. These four also happen to be the four colleges with the most money received every year.
+
+```{r barchart_year_college,echo=F}
+ggplot(donation2, aes(fill=College, y=Amount, x=Year)) + 
+  geom_bar(position="stack", stat="identity") +
+  scale_y_continuous(labels=scales::dollar_format()) +
+  theme_bw() +
+  scale_fill_brewer(palette = "Paired") +
+  guides(fill = guide_legend(title = "College")) +
+  labs(x = "Year", 
+       y = "Total Amount Donated") + 
+  ggtitle("Amount Donated by Year and College") + 
+  ggeasy::easy_center_title() 
+```
+
+### ANOVA
+
+SMART Question: What are the factors that affect the amount of donations received by universities in the US?
+
+To answer our question, we will break down the data based on different features and compare the data points between each subcategory.
+
+### vs. State
+
+Q: Is donation the same in different states?
+
+Let’s take a look at donation vs. states with a boxplot. We break down the data by states. From this visualization, it seems that the interquartile range of most states lie in the 3.5 - 4 range. There is two states that stand out from the rest, which are Colorado and Wyoming. The interquartile range of the two states are higher than the rest of the field.
+
+```{r boxplot_state,echo=F}
+loadPkg("ggplot2")
+ggplot(donation2, aes(x=State, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. State', x='State', y='Amount (log10)')
+```
+
+H0: The mean of donation is the same in every state.
+
+H1: The mean of donation is different in at least one state.
+
+```{r anova_state,echo=F}
+anovaState <- aov(log10(Amount)~State, data=donation2)
+xkabledply(anovaState)
+```
+
+As we conduct our ANOVA test, we notice that the p-value is close to 0, so we reject our null hypothesis, meaning we can say at least in one state (most likely Colorado), the mean of donation is different than in the other states, exactly what we observed from the boxplot.
+
+### post hoc Tukey
+```{r Tukey,echo = F}
+tukeyState <- TukeyHSD(anovaState)
+tukeyState
+```
+
+But following pairwise comparisons have p-value smaller than the standard 0.05:
+NE - CO, NY - CO, TX - CO.
+So we can say that the mean of donation in Colorado is different from that in Nebraska, New York and Texas.
+
+Even though the interquartile range of Wyoming also seems very different from other states, the test results states otherwise. Also notice that there are far fewer data points in this state, which could explain why the discrepancy in boxplot does not translate to the difference in mean.
+
+### vs. College
+
+Q: Is donation that goes to different colleges the same?
+
+Next, let’s take a look at donation vs. colleges in a boxplot.
+From this visualization the interquartile range of most colleges lie in the 3.5 - 4 range, with the exception of COM, which seems lower than the rest. Additionally, the length of each box, or the value of Q3 - Q1, is about the same for all colleges.
+
+```{r boxplot_college,echo=F}
+ggplot(donation2, aes(x=College, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. College', x='College', y='Amount (log10)')
+```
+
+H0: The mean of donation that goes to different colleges is the same.
+
+H1: The mean of donation that goes to different colleges are not all the same.
+
+```{r anova_college, echo = F}
+anovaCollege <- aov(log10(Amount)~College, data=donation2)
+xkabledply(anovaCollege)
+```
+
+The p-value is 0.181 > 0.05, so we fail to reject the null hypothesis, meaning we can say the mean of donation that goes to different colleges is the same.
+
+### vs. Year
+
+Q: Is donation received in each year the same?
+
+Next, let’s take a look at donation vs. years in a boxplot.
+From this visualization the interquartile range of each year lie in the 3.5 - 4 range. Furthermore, the value of Q3 - Q1, is about the same.
+
+```{r boxplot_year,echo=F}
+ggplot(donation2, aes(x=Year, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. Year', x='Year', y='Amount (log10)')
+```
+
+H0: The mean of donation received in each year is the same.
+
+H1: The mean of donation received in each year are not all the same.
+
+```{r anova_year, echo=F}
+anovaYear <- aov(log10(Amount)~Year, data=donation2)
+xkabledply(anovaYear)
+```
+
+The p-value is 0.0925 > 0.05, so we fail to reject the null hypothesis, meaning we can say the mean of donation received in different years are the same.
+
+### vs. Allocation
+
+Q: Is donation with different allocation method the same?
+
+Next, let’s take a look at donation vs. allocation in a boxplot.
+From this visualization the interquartile range of each allocation method lies in the 3.5 - 4 range. In addition, the value of Q3 - Q1 is about the same for each allocation method.
+
+```{r boxplot_allocation, echo=F}
+ggplot(donation2, aes(x=Gift_Allocation, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. Allocation', x='Allocation', y='Amount (log10)')
+```
+
+H0: The mean of donation with different allocation method is the same.
+
+H1: The mean of donation with different allocation method are not all the same.
+
+```{r anova_allocation, echo=F}
+anovaAllocation <- aov(log10(Amount)~Gift_Allocation, data=donation2)
+xkabledply(anovaAllocation)
+```
+
+The p-value is 0.793 > 0.05, so we fail to reject the null hypothesis, meaning we can say the mean of donation with different allocations are the same.
+
+Further break down each allocation method into its subcategories. Conduct ANOVA test separately on each allocation method across its subcategories.
+
+```{r subcategory, echo=F}
+campus_resource <- subset(donation2, Gift_Allocation=='Campus_Resource')
+endowment <- subset(donation2, Gift_Allocation=='Endowment')
+scholarship <- subset(donation2, Gift_Allocation == 'Scholarship')
+```
+
+### Campus Resources
+
+Q: Is donation from different campus resources the same?
+
+From this visualization, the interquartile range of each resource varies from each other. For most resources, the value of Q1 is around 3.5, except for RCR which sits far below at around 3.25. The interquartile range of RCR extends a lot further than the others, especially that of ATH. It seems like the mean of RCR could possibly be different from that of other resources. 
+
+```{r boxplot_campus, echo=F}
+ggplot(campus_resource, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. Campus Resources', x='Resource', y='Amount (log10)')
+```
+
+H0: The mean of donation from different campus resources is the same.
+
+H1: The mean of donation from at least one campus resource is different from the others.
+
+```{r anova_campus, echo=F}
+anovaCampus <- aov(log(Amount)~Allocation_Subcategory, data=campus_resource)
+xkabledply(anovaCampus)
+```
+
+The p-value is 0.222 > 0.05, so we cannot reject our null hypothesis, meaning we can say the mean of donation among different resources are the same.
+
+Sample size cannot explain the difference of the test result and the boxplot here; each resource has a sample size between 100 - 120, roughly the same. But notice the medians are about the same. A possible explanation is that for the data points in Q3, the data points of RCR on average have higher value than those of ATH, thus they are able to cover the lower values of data points in Q1.
+
+### Endowment
+
+Q: Is donation of different endowments the same?
+
+Now, let’s take a look at donation vs. endowment in a boxplot.
+From this visualization the interquartile range of each year lie in the same range. Furthermore, the interquartile range of each box is about the same.
+
+```{r boxplot_endowment, echo=F}
+ggplot(endowment, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. Endowment', x='Endowment', y='Amount (log10)')
+```
+
+H0: The mean of donation of different endowments the same.
+
+H1: The mean of donation of at least one endowment is different from the others.
+
+```{r anova_endowment, echo=F}
+anovaEndowment <- aov(log10(Amount)~Allocation_Subcategory, data=endowment)
+xkabledply(anovaEndowment)
+```
+
+The p-value is 0.850 > 0.05, so we cannot reject our null hypothesis, meaning we can say the mean of donation among different endowments are the same.
+
+### Scholarship
+
+Q: Is donation from different scholarships the same?
+
+Finally let's look at donation vs. scholarship in a boxplot.
+
+From this visualization, the interquartile of different scholarships varies a lot. The value of Q1 can go as low as 3.3 (AGR, ENG) and can be as high as 3.55 (NUR). Since the value of Q3 is about the same at 3.9, the interquartile range expands differently among various scholarships. Also notice here, the medians do not lie around the same level with NUR having the highest at 3.8 and VET having the lowest at 3.55.
+
+```{r boxplot_scholarship, echo=F}
+ggplot(scholarship, aes(x=Allocation_Subcategory, y=log10(Amount)))+geom_boxplot(outlier.size = 2)+labs(title = 'Donation vs. Scholarship', x='Scholarship', y='Amount (log10)')
+```
+
+H0: The donation from different scholarships the same.
+
+H1: The donation from at least one scholarships is different than the others.
+
+```{r anova_scholarship, echo=F}
+anovaScholarship <- aov(log10(Amount)~Allocation_Subcategory, data=scholarship)
+xkabledply(anovaScholarship)
+```
+
+The p-value is 0.677 > 0.05, so we cannot reject our null hypothesis, meaning we can say the mean of donation among different resources is the same. 
+
+Difference in sample size is the likely explanation behind the discrepancy of the observation in boxplot and the test result. NUR has the smallest sample size of 32 whereas NAT has the largest of 307.
+
+### ANOVA for all
+
+Let's perform an ANOVA test on all columns (except Propect_ID).
+
+There is only one numeric variable, 'amount', so can't use two sided t tests.
+
+```{r anova_all, results=T}
+anova_all <- aov(log10(Amount) ~ Gift_Allocation + Allocation_Subcategory + City +
+                   College + Year + Major + State, data = donation2)
+summary.aov(anova_all)
+```
+
+ANOVA reveals that significant variables are year and major. All other variables appear to be quite insignificant.
+
+### ChiSquare
+
+```{r chiSquare, results=T}
+table(donation2$City, donation2$Year)
+major_v_year_chi <- chisq.test(donation2$City, donation2$Year)
+major_v_year_chi
+```
+
+Major and year, the only statistically significant variables, are independent. In other words, knowing the Year a donation was made does not give any information about the City the school resides. Similarly, knowing the City where the school is does not give any information about the Year the donation was made.
+
+
+
+### Conclusion
+
+This analysis provided many insights into the dynamics of the donation received by universities between the year 2010 - 2015. After conducting EDA on most of the variables in the dataset, we were able notice that the variance and standard deviation is quite large, hence the data points spread widely from the mean. We also notice that the original dataset is negative skewed. However after we take the log10 of donation, the distribution is positive skewed.
+
+As we proceeded with hypothesis analysis, we can confirm the answers for our SMART question: the amount received is affected by the city and the state the university locate in. Although among different the colleges we cannot say that the mean of donation is different, but within a single college, there is discrepancy in the money received between different majors.
+
+### Source
+
+Tableau Public https://public.tableau.com/en-us/s/resources
+
+How COVID-19 Affected Higher Education Fundraising, Future Forecasts, and Fundraising Strategies. (2021, April 14). WEALTHENGINE. https://www.wealthengine.com/how-covid-19-affected-higher-education-fundraising-future-forecasts-and-fundraising-strategies/
