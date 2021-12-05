@@ -1,0 +1,147 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r}
+library(ezids)
+library(dplyr)
+library(ggplot2)
+library(skimr)
+library(janitor)
+
+library(modeest)
+#install.packages("ggeasy")
+library(ggeasy)
+knitr::opts_chunk$set(warning = F, results = "hide", message = F)
+options(scientific=T, digits = 3) 
+```
+
+
+```{r}
+library(readr)
+bank <- read_csv("/Users/chim/Desktop/GitHub/NearestNeighbors/bank.csv") %>% row_to_names(row_number = 1)
+```
+### Preprocessing 
+
+```{r}
+str(bank)
+```
+```{r}
+# changing the data types 
+bank[] <- lapply(bank, as.factor)
+bank$age <- as.numeric(bank$age)
+bank$balance <- as.numeric(bank$balance)
+bank$day <- as.numeric(bank$day)
+bank$duration <- as.numeric(bank$duration)
+bank$campaign <- as.numeric(bank$campaign)
+bank$previous <- as.numeric(bank$previous)
+bank$pdays <- as.numeric(bank$pdays)
+bank$education <- as.ordered(bank$education)
+```
+
+```{r}
+# Checking for NA 
+sum(is.na(bank))
+
+# no nulls
+```
+
+```{r}
+# Checking for outliers
+boxplot(bank$age,ylab = 'age') 
+boxplot(bank$balance,ylab = 'balance')
+boxplot(bank$day, ylab = 'day')
+boxplot(bank$duration, ylab = 'duration')
+boxplot(bank$campaign, ylab = 'campaign')
+hist(bank$previous, ylab = 'previous')
+hist(bank$pdays, ylab = 'pdays')
+```
+```{r}
+# Removing outliers
+bank2 = outlierKD2(bank, age, rm=T, histogram = F)
+str(bank2)
+```
+
+```{r}
+qqnorm(bank2$age) 
+qqline(bank2$age, col= "steelblue", lwd = 2)
+
+qqnorm(bank2$balance)
+qqline(bank2$balance, col= "steelblue", lwd = 2)
+
+qqnorm(bank2$day)
+qqline(bank2$day, col= "steelblue", lwd = 2)
+
+qqnorm(bank2$duration)
+qqline(bank2$duration, col= "steelblue", lwd = 2)
+
+qqnorm(bank2$campaign)
+qqline(bank2$campaign, col= "steelblue", lwd = 2)
+
+qqnorm(bank2$previous)
+qqline(bank2$previous, col= "steelblue", lwd = 2)
+
+qqnorm(bank2$pdays)
+qqline(bank2$pdays, col= "steelblue", lwd = 2)
+
+```
+
+```{r}
+# lets check yes vs no: subscribed a deposity yes/no
+ggplot(bank2, aes( x = y)) + geom_bar()
+prop.table(table(bank2$y))
+# way more no than yes - not balanced 
+# will have to correct this
+```
+# Data Partition
+```{r}
+# spliting the data into train and testing
+require(caTools)
+set.seed(123)
+sample <- sample.split(bank$y, SplitRatio = 0.7)
+train <- subset(bank2, sample == TRUE)
+test <- subset(bank2, sample == FALSE)
+```
+
+```{r}
+# building and testing model before balancing
+banklog <- glm(y ~ marital + loan + month +duration + poutcome + pdays + previous, data = train, family = "binomial")
+summary(banklog)
+
+
+# predicting before balancing 
+library(pROC)
+
+banklogpred <- predict(banklog, newdata = test, type = "response")
+```
+```{r}
+#install.packages("ROSE")
+library(ROSE)
+bank_balanced_over <- ovun.sample(y ~., data = train, method = "over", N = 5600)$data
+```
+
+```{r}
+#let's check to see if its balanced
+table(bank_balanced_over$y)
+```
+
+
+```{r}
+# using sig variables
+banklog2 <- glm(y ~ marital + loan + month +duration + poutcome + pdays + previous, data = bank_balanced_over, family = "binomial")
+summary(banklog2)
+```
+
+```{r}
+#predicting 
+library(pROC)
+banklog2pred <- predict(banklog2, newdata = test, type = "response")
+```
+
+```{r}
+roc.curve(test$y, banklogpred)
+roc.curve(test$y, banklog2pred, add.roc = TRUE, col = 2)
+```
