@@ -15,6 +15,11 @@ library(modeest)
 library(ggeasy)
 library(skimr)
 library(janitor)
+library(caret)
+library(grid)
+library(broom)
+library(tidyr)
+library(scales)
 ```
 
 ```{r setup, include=FALSE}
@@ -33,7 +38,7 @@ options(scientific=T, digits = 3)
 ## The beginning
 
 ```{r initial_data}
-bank <- read_csv(file="bank.csv")
+bank <- data.frame(read.csv(file="bank.csv"))
 ```
 
 ```{r change_data_type}
@@ -90,13 +95,6 @@ pR2(mybanklog2)
 dabank <- dominanceAnalysis(mybanklog2)
 ```
 
-Explore the raw values of each fit index by using getFits(). For simplicity, we only consider the McFadden index, R2M.
-```{r}
-getFits(dabank,"r2.m")
-```
-
-The first row represents the raw values of each univariate model. The following rows show the additional contribution of each predictor added to the subset model (indicated by the first column).
-
 ### complete dominance matrix
 ```{r}
 dominanceMatrix(dabank, type="complete",fit.functions = "r2.m", ordered=TRUE)
@@ -116,11 +114,6 @@ Here is a graph of contribution by levels.
 plot(dabank, which.graph ="conditional",fit.function = "r2.m")
 ```
 
-### Conditional dominance
-```{r}
-dominanceMatrix(dabank, type="conditional",fit.functions = "r2.m", ordered=TRUE)
-```
-
 ### General dominance
 ```{r}
 averageContribution(dabank,fit.functions = "r2.m")
@@ -135,11 +128,31 @@ To determine general dominance, we compute the mean of each predictor’s condit
 dominanceMatrix(dabank, type="general",fit.functions = "r2.m", ordered=TRUE)
 ```
 
-## predicting before balancing 
+## Confusion matrix for unbalanced model
 ```{r}
 library(pROC)
-banklogpred <- predict(mybanklog2, newdata = test, type = "response")
+test$banklogpred <- predict(mybanklog2, newdata = test, type = "response")
 ```
+
+```{r}
+cutoff <- 0.5
+predict <- test$banklogpred
+actual  <- relevel( as.factor( test$y ), "1" )
+result <- data.table( actual = actual, predict = predict )
+result[ , type := ifelse( predict >= cutoff & actual == 1, "TP",
+					  ifelse( predict >= cutoff & actual == 0, "FP", 
+					  ifelse( predict <  cutoff & actual == 1, "FN", "TN" ) ) ) %>% as.factor() ]
+plot <- ggplot( result, aes( actual, predict, color = type ) ) + 
+			geom_violin( fill = "white", color = NA ) +
+			geom_jitter( shape = 1 ) + 
+			geom_hline( yintercept = cutoff, color = "blue", alpha = 0.6 ) + 
+			scale_y_continuous( limits = c( 0, 1 ) ) + 
+			scale_color_discrete( breaks = c( "TP", "FN", "FP", "TN" ) ) + # ordering of the legend 
+			guides( col = guide_legend( nrow = 2 ) ) + # adjust the legend to have two rows  
+			ggtitle( sprintf( "Confusion Matrix with Cutoff at %.3f", cutoff ) )
+plot
+```
+
 
 # Balance the dataset
 ```{r}
@@ -154,6 +167,8 @@ table(bank_balanced_over$y)
 mybanklog2b <- glm(y ~ balance+housing+loan+duration+campaign, data = bank_balanced_over, family = "binomial")
 summary(mybanklog2b)
 ```
+
+## Training Set's Predicted Score
 ```{r}
 library(ggthemes)
 # prediction
@@ -167,5 +182,103 @@ ggtitle( "Training Set's Predicted Score" ) +
 scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) + 
 theme_economist()
 ```
+
+## Confusion matrix
+```{r}
+cutoff <- 0.5
+predict <- test$prediction
+actual  <- relevel( as.factor( test$y ), "1" )
+result <- data.table( actual = actual, predict = predict )
+result[ , type := ifelse( predict >= cutoff & actual == 1, "TP",
+					  ifelse( predict >= cutoff & actual == 0, "FP", 
+					  ifelse( predict <  cutoff & actual == 1, "FN", "TN" ) ) ) %>% as.factor() ]
+plot <- ggplot( result, aes( actual, predict, color = type ) ) + 
+			geom_violin( fill = "white", color = NA ) +
+			geom_jitter( shape = 1 ) + 
+			geom_hline( yintercept = cutoff, color = "blue", alpha = 0.6 ) + 
+			scale_y_continuous( limits = c( 0, 1 ) ) + 
+			scale_color_discrete( breaks = c( "TP", "FN", "FP", "TN" ) ) + # ordering of the legend 
+			guides( col = guide_legend( nrow = 2 ) ) + # adjust the legend to have two rows  
+			ggtitle( sprintf( "Confusion Matrix with Cutoff at %.3f", cutoff ) )
+plot
+```
+
+## Find the best cutoff and cost
+```{r}
+library(ROCR)
+cost.fp <- 100
+cost.fn <- 200
+pred <- prediction(test$prediction, test$y)
+perf <- performance(pred,"tpr","fpr")
+roc_dt <- data.frame( fpr = perf@x.values[[1]], tpr = perf@y.values[[1]] )
+cost <- perf@x.values[[1]] * cost.fp * sum( test$y == 0 ) + 
+			( 1 - perf@y.values[[1]] ) * cost.fn * sum( test$y == 1 )
+cost_dt <- data.frame( cutoff = pred@cutoffs[[1]], cost = cost )
+best_index  <- which.min(cost)
+best_cost   <- cost_dt[ best_index, "cost" ]
+best_tpr    <- roc_dt[ best_index, "tpr" ]
+best_fpr    <- roc_dt[ best_index, "fpr" ]
+best_cutoff <- pred@cutoffs[[1]][ best_index ]
+best_cost
+best_cutoff
+```
+
+```{r} 
+# area under curve
+auc <- performance( pred, "auc" )@y.values[[1]]
+auc
+```
+
+
+```{r}
+# reconstruct the confusion matrix
+cutoff<-0.703
+predict <- test$prediction
+actual  <- relevel( as.factor( test$y ), "1" )
+result <- data.table( actual = actual, predict = predict )
+result[ , type := ifelse( predict >= cutoff & actual == 1, "TP",
+					  ifelse( predict >= cutoff & actual == 0, "FP", 
+					  ifelse( predict <  cutoff & actual == 1, "FN", "TN" ) ) ) %>% as.factor() ]
+plot <- ggplot( result, aes( actual, predict, color = type ) ) + 
+			geom_violin( fill = "white", color = NA ) +
+			geom_jitter( shape = 1 ) + 
+			geom_hline( yintercept = cutoff, color = "blue", alpha = 0.6 ) + 
+			scale_y_continuous( limits = c( 0, 1 ) ) + 
+			scale_color_discrete( breaks = c( "TP", "FN", "FP", "TN" ) ) + # ordering of the legend 
+			guides( col = guide_legend( nrow = 2 ) ) + # adjust the legend to have two rows  
+			ggtitle( sprintf( "Confusion Matrix with Cutoff at %.3f", cutoff ) )
+plot
+```
+
+#Interpretation and Reasoning
+```{r}
+expcoeff = exp(coef(mybanklog2b))
+# expcoeff
+xkabledply( as.table(expcoeff), title = "Exponential of coefficients" )
+```
+
+Now use our model to predict a sample dataset.
+
+```{r}
+# use the model to reevaluate a random selection of our data
+df <- data.frame(read.csv(file="bank1.csv"))
+df[df=='no'] <- 0
+df[df=='yes'] <- 1
+df$housing <- as.factor(df$housing)
+df$loan <- as.factor(df$loan)
+# predict
+df$prediction <- predict(mybanklog2b, newdata = df, type = "response" )
+```
+
+```{r}
+df$p_class <- as.factor(ifelse(df$prediction>cutoff, 1, 0))
+nrow(df[(df['y']==1) & (df['p_class']==0)])
+```
+
+For this sample we manage to reduce FN to 0.
+
 # Reference
+Useful functions when working with logistic regression
+https://github.com/ethen8181/machine-learning/blob/master/unbalanced/unbalanced_code/unbalanced_functions.R
+
 Exploring predictors’ importance in binomial logistic regressions https://cran.r-project.org/web/packages/dominanceanalysis/vignettes/da-logistic-regression.html
