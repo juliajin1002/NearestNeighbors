@@ -53,69 +53,75 @@ bank2 = outlierKD2(bank, age, rm=T, histogram = F)
 ```
 
 ## Data Partition
-# ```{r}
-# # spliting the data into train and testing
-# require(caTools)
-# set.seed(123)
-# sample <- sample.split(bank$y, SplitRatio = 0.7)
-# train <- subset(bank2, sample == TRUE)
-# test <- subset(bank2, sample == FALSE)
-# ```
 
 ```{r}
 library(dominanceanalysis)
 library(caTools)
-# set.seed(101) 
-# 
-# sample <- caTools::sample.split(bank2$ID, SplitRatio = .7)
-# train <- subset(bank2, sample == TRUE)
-# test  <- subset(bank2, sample == FALSE)
+set.seed(123)
+sample <- sample.split(bank2$y, SplitRatio = 0.7)
+train <- subset(bank2, sample == TRUE)
+test  <- subset(bank2, sample == FALSE)
 ```
 
-## Model Construction
+## Model Construction before balancing
 ```{r model}
-mybanklog <- glm(y ~ age+marital+education+default+balance+housing+loan+contact+duration+campaign+pdays+previous+poutcome, data = bank2, family = "binomial")
+mybanklog <- glm(y ~ age+marital+education+default+balance+housing+loan+contact+duration+campaign+pdays+previous+poutcome, data = train, family = "binomial")
 summary(mybanklog)
 ```
 
 ```{r model_refine}
-mybanklog2 <- glm(y ~ balance+housing+loan+duration+campaign, data = bank2, family = "binomial")
+mybanklog2 <- glm(y ~ balance+housing+loan+duration+campaign, data = train, family = "binomial")
 summary(mybanklog2)
 ```
 
+Interpret the table of null deviance.
 ```{r anova}
 anova(mybanklog2, test="Chisq")
 ```
 
-```{r}
+Look at the McFadden value.
+```{r McF}
 library(pscl)
 pR2(mybanklog2)
 ```
 
-```{r}
-da.glm.fit()("names")
+## Predictors importance using dominance analysis
+```{r da}
 dabank <- dominanceAnalysis(mybanklog2)
 ```
 
+Explore the raw values of each fit index by using getFits(). For simplicity, we only consider the McFadden index, R2M.
 ```{r}
 getFits(dabank,"r2.m")
 ```
 
+The first row represents the raw values of each univariate model. The following rows show the additional contribution of each predictor added to the subset model (indicated by the first column).
+
+### complete dominance matrix
 ```{r}
 dominanceMatrix(dabank, type="complete",fit.functions = "r2.m", ordered=TRUE)
 ```
 
+This complete dominance matrix summarizes the relation between each pair of predictors.
+
+### Contribution by level
 ```{r}
 contributionByLevel(dabank, fit.functions="r2.m")
 ```
 
+For each model size (see column level of the table), the average additional contribution of each predictor is calculated.
+
+Here is a graph of contribution by levels.
 ```{r}
 plot(dabank, which.graph ="conditional",fit.function = "r2.m")
 ```
+
+### Conditional dominance
 ```{r}
 dominanceMatrix(dabank, type="conditional",fit.functions = "r2.m", ordered=TRUE)
 ```
 
+### General dominance
 ```{r}
 averageContribution(dabank,fit.functions = "r2.m")
 ```
@@ -124,5 +130,42 @@ averageContribution(dabank,fit.functions = "r2.m")
 plot(dabank, which.graph ="general",fit.function = "r2.m")
 ```
 
+To determine general dominance, we compute the mean of each predictor’s conditional measures.
+```{r}
+dominanceMatrix(dabank, type="general",fit.functions = "r2.m", ordered=TRUE)
+```
+
+## predicting before balancing 
+```{r}
+library(pROC)
+banklogpred <- predict(mybanklog2, newdata = test, type = "response")
+```
+
+# Balance the dataset
+```{r}
+#install.packages("ROSE")
+library(ROSE)
+bank_balanced_over <- ovun.sample(y ~., data = train, method = "over", N = 5600)$data
+table(bank_balanced_over$y)
+```
+
+```{r}
+# using balanced dataset
+mybanklog2b <- glm(y ~ balance+housing+loan+duration+campaign, data = bank_balanced_over, family = "binomial")
+summary(mybanklog2b)
+```
+```{r}
+library(ggthemes)
+# prediction
+train$prediction <- predict(mybanklog2b, newdata = train, type = "response" )
+test$prediction  <- predict(mybanklog2b, newdata = test , type = "response" )
+
+# distribution of the prediction score grouped by known outcome
+ggplot( train, aes( prediction, color = as.factor(y) ) ) + 
+geom_density( size = 1 ) +
+ggtitle( "Training Set's Predicted Score" ) + 
+scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) + 
+theme_economist()
+```
 # Reference
 Exploring predictors’ importance in binomial logistic regressions https://cran.r-project.org/web/packages/dominanceanalysis/vignettes/da-logistic-regression.html
