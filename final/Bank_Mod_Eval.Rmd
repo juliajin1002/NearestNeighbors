@@ -257,26 +257,6 @@ expcoeff = exp(coef(mybanklog2b))
 xkabledply( as.table(expcoeff), title = "Exponential of coefficients" )
 ```
 
-Now use our model to predict a sample dataset.
-
-```{r}
-# use the model to reevaluate a random selection of our data
-df <- data.frame(read.csv(file="bank1.csv"))
-df[df=='no'] <- 0
-df[df=='yes'] <- 1
-df$housing <- as.factor(df$housing)
-df$loan <- as.factor(df$loan)
-# predict
-df$prediction <- predict(mybanklog2b, newdata = df, type = "response" )
-```
-
-```{r}
-df$p_class <- as.factor(ifelse(df$prediction>cutoff, 1, 0))
-nrow(df[(df['y']==1) & (df['p_class']==0)])
-```
-
-For this sample we manage to reduce FN to 0.
-
 # Reference
 Useful functions when working with logistic regression
 https://github.com/ethen8181/machine-learning/blob/master/unbalanced/unbalanced_code/unbalanced_functions.R
