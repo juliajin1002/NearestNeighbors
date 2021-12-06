@@ -65,12 +65,14 @@ bank2 = outlierKD2(bank, age, rm=T, histogram = F)
 ```{r}
 library(dominanceanalysis)
 library(caTools)
-set.seed(101) 
-sample <- caTools::sample.split(bank2$ID, SplitRatio = .70)
-train <- subset(bank2, sample == TRUE)
-test  <- subset(bank2, sample == FALSE)
+# set.seed(101) 
+# 
+# sample <- caTools::sample.split(bank2$ID, SplitRatio = .7)
+# train <- subset(bank2, sample == TRUE)
+# test  <- subset(bank2, sample == FALSE)
 ```
 
+## Model Construction
 ```{r model}
 mybanklog <- glm(y ~ age+marital+education+default+balance+housing+loan+contact+duration+campaign+pdays+previous+poutcome, data = bank2, family = "binomial")
 summary(mybanklog)
@@ -80,5 +82,47 @@ summary(mybanklog)
 mybanklog2 <- glm(y ~ balance+housing+loan+duration+campaign, data = bank2, family = "binomial")
 summary(mybanklog2)
 ```
+
+```{r anova}
+anova(mybanklog2, test="Chisq")
+```
+
+```{r}
+library(pscl)
+pR2(mybanklog2)
+```
+
+```{r}
+da.glm.fit()("names")
+dabank <- dominanceAnalysis(mybanklog2)
+```
+
+```{r}
+getFits(dabank,"r2.m")
+```
+
+```{r}
+dominanceMatrix(dabank, type="complete",fit.functions = "r2.m", ordered=TRUE)
+```
+
+```{r}
+contributionByLevel(dabank, fit.functions="r2.m")
+```
+
+```{r}
+plot(dabank, which.graph ="conditional",fit.function = "r2.m")
+````
+```{r}
+dominanceMatrix(dabank, type="conditional",fit.functions = "r2.m", ordered=TRUE)
+```
+
+```{r}
+averageContribution(dabank,fit.functions = "r2.m")
+```
+
+```{r}
+plot(dabank, which.graph ="general",fit.function = "r2.m")
+```
+
 # Reference
 Exploring predictors’ importance in binomial logistic regressions https://cran.r-project.org/web/packages/dominanceanalysis/vignettes/da-logistic-regression.html
