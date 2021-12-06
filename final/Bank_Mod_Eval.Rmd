@@ -111,7 +111,7 @@ contributionByLevel(dabank, fit.functions="r2.m")
 
 ```{r}
 plot(dabank, which.graph ="conditional",fit.function = "r2.m")
-````
+```
 ```{r}
 dominanceMatrix(dabank, type="conditional",fit.functions = "r2.m", ordered=TRUE)
 ```
