@@ -112,6 +112,7 @@ table(result$type)
 library(ROCR)
 cost.fp <- 100
 cost.fn <- 200
+# At cutoff = 0.5, cost = 200* 127 + 100 * 33 = 31800
 pred <- prediction(test$banklogpred, test$y)
 perf <- performance(pred,"tpr","fpr")
 roc_dt <- data.frame( fpr = perf@x.values[[1]], tpr = perf@y.values[[1]] )
@@ -125,6 +126,28 @@ best_fpr    <- roc_dt[ best_index, "fpr" ]
 best_cutoff <- pred@cutoffs[[1]][ best_index ]
 best_cost
 best_cutoff
+```
+```{r}
+normalize <- function(v) ( v - min(v) ) / diff( range(v) )
+col_ramp <- colorRampPalette( c( "green", "orange", "red", "black" ) )(100)   
+col_by_cost <- col_ramp[ ceiling( normalize(cost) * 99 ) + 1 ]
+roc_plot <- ggplot( roc_dt, aes( fpr, tpr ) ) + 
+  geom_line( color = rgb( 0, 0, 1, alpha = 0.3 ) ) +
+  geom_point( color = col_by_cost, size = 4, alpha = 0.2 ) + 
+  geom_segment( aes( x = 0, y = 0, xend = 1, yend = 1 ), alpha = 0.8, color = "royalblue" ) + 
+  labs( title = "ROC", x = "False Postive Rate", y = "True Positive Rate" ) +
+  geom_hline( yintercept = best_tpr, alpha = 0.8, linetype = "dashed", color = "steelblue4" ) +
+  geom_vline( xintercept = best_fpr, alpha = 0.8, linetype = "dashed", color = "steelblue4" ) 
+roc_plot
+```
+```{r}
+cost_plot <- ggplot( cost_dt, aes( cutoff, cost ) ) +
+                 geom_line( color = "blue", alpha = 0.5 ) +
+                 geom_point( color = col_by_cost, size = 4, alpha = 0.5 ) +
+                 ggtitle( "Cost" ) +
+                 scale_y_continuous( labels = comma ) +
+                 geom_vline( xintercept = best_cutoff, alpha = 0.8, linetype = "dashed", color = "steelblue4" ) 
+cost_plot
 ```
 ```{r} 
 # area under curve
@@ -170,18 +193,28 @@ mybanklog2b <- glm(y ~ balance+housing+loan+duration+campaign, data = bank_balan
 summary(mybanklog2b)
 ```
 
-## Null deviance
+## Interpretation and Reasoning
+```{r}
+expcoeff = exp(coef(mybanklog2b))
+# expcoeff
+xkabledply( as.table(expcoeff), title = "Exponential of coefficients" )
+```
+### Null deviance
 Interpret the table of null deviance.
 ```{r anova}
 anova(mybanklog2b, test="Chisq")
 ```
 
-## McFadden
+In our case, we can see that adding duration alone reduces the deviance drastically (i.e., from 7507 to 5665). The small deviance value of slope indicates this variable does not add much to the model, meaning that almost the same amount of variation is explained when this variable is added.
+
+### McFadden
 Look at the McFadden value.
 ```{r McF}
 library(pscl)
 pR2(mybanklog2b)
 ```
+
+With the McFadden value of 0.284, about 28.4% of the variations in y is explained by the explanatory variables in the model.
 
 ## Predictors importance using dominance analysis
 ```{r da}
@@ -278,6 +311,7 @@ roc_plot <- ggplot( roc_dt, aes( fpr, tpr ) ) +
   labs( title = "ROC", x = "False Postive Rate", y = "True Positive Rate" ) +
   geom_hline( yintercept = best_tpr, alpha = 0.8, linetype = "dashed", color = "steelblue4" ) +
   geom_vline( xintercept = best_fpr, alpha = 0.8, linetype = "dashed", color = "steelblue4" ) 
+roc_plot
 ```
 ```{r}
 cost_plot <- ggplot( cost_dt, aes( cutoff, cost ) ) +
@@ -320,12 +354,6 @@ plot
 table(result$type)
 ```
 
-#Interpretation and Reasoning
-```{r}
-expcoeff = exp(coef(mybanklog2b))
-# expcoeff
-xkabledply( as.table(expcoeff), title = "Exponential of coefficients" )
-```
 
 # Reference
 Useful functions when working with logistic regression
