@@ -116,7 +116,7 @@ plot(dabank, which.graph ="conditional",fit.function = "r2.m")
 
 ### General dominance
 ```{r}
-averageContribution(dabank,fit.functions = "r2.m")
+averageContribution(dabank, fit.functions = "r2.m")
 ```
 
 ```{r}
@@ -202,7 +202,15 @@ plot <- ggplot( result, aes( actual, predict, color = type ) ) +
 			ggtitle( sprintf( "Confusion Matrix with Cutoff at %.3f", cutoff ) )
 plot
 ```
+```{r}
+table(result$type)
+```
 
+
+```{r}
+p_class<-as.factor(ifelse(result$predict>0.5, 1, 0))
+confusionMatrix(actual, p_class)
+```
 ## Find the best cutoff and cost
 ```{r}
 library(ROCR)
@@ -221,6 +229,28 @@ best_fpr    <- roc_dt[ best_index, "fpr" ]
 best_cutoff <- pred@cutoffs[[1]][ best_index ]
 best_cost
 best_cutoff
+```
+
+```{r}
+normalize <- function(v) ( v - min(v) ) / diff( range(v) )
+col_ramp <- colorRampPalette( c( "green", "orange", "red", "black" ) )(100)   
+col_by_cost <- col_ramp[ ceiling( normalize(cost) * 99 ) + 1 ]
+roc_plot <- ggplot( roc_dt, aes( fpr, tpr ) ) + 
+  geom_line( color = rgb( 0, 0, 1, alpha = 0.3 ) ) +
+  geom_point( color = col_by_cost, size = 4, alpha = 0.2 ) + 
+  geom_segment( aes( x = 0, y = 0, xend = 1, yend = 1 ), alpha = 0.8, color = "royalblue" ) + 
+  labs( title = "ROC", x = "False Postive Rate", y = "True Positive Rate" ) +
+  geom_hline( yintercept = best_tpr, alpha = 0.8, linetype = "dashed", color = "steelblue4" ) +
+  geom_vline( xintercept = best_fpr, alpha = 0.8, linetype = "dashed", color = "steelblue4" ) 
+```
+```{r}
+cost_plot <- ggplot( cost_dt, aes( cutoff, cost ) ) +
+                 geom_line( color = "blue", alpha = 0.5 ) +
+                 geom_point( color = col_by_cost, size = 4, alpha = 0.5 ) +
+                 ggtitle( "Cost" ) +
+                 scale_y_continuous( labels = comma ) +
+                 geom_vline( xintercept = best_cutoff, alpha = 0.8, linetype = "dashed", color = "steelblue4" ) 
+cost_plot
 ```
 
 ```{r} 
@@ -250,6 +280,9 @@ plot <- ggplot( result, aes( actual, predict, color = type ) ) +
 plot
 ```
 
+```{r}
+table(result$type)
+```
 #Interpretation and Reasoning
 ```{r}
 expcoeff = exp(coef(mybanklog2b))
