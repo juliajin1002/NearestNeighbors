@@ -79,62 +79,13 @@ mybanklog2 <- glm(y ~ balance+housing+loan+duration+campaign, data = train, fami
 summary(mybanklog2)
 ```
 
-Interpret the table of null deviance.
-```{r anova}
-anova(mybanklog2, test="Chisq")
-```
-
-Look at the McFadden value.
-```{r McF}
-library(pscl)
-pR2(mybanklog2)
-```
-
-## Predictors importance using dominance analysis
-```{r da}
-dabank <- dominanceAnalysis(mybanklog2)
-```
-
-### complete dominance matrix
-```{r}
-dominanceMatrix(dabank, type="complete",fit.functions = "r2.m", ordered=TRUE)
-```
-
-This complete dominance matrix summarizes the relation between each pair of predictors.
-
-### Contribution by level
-```{r}
-contributionByLevel(dabank, fit.functions="r2.m")
-```
-
-For each model size (see column level of the table), the average additional contribution of each predictor is calculated.
-
-Here is a graph of contribution by levels.
-```{r}
-plot(dabank, which.graph ="conditional",fit.function = "r2.m")
-```
-
-### General dominance
-```{r}
-averageContribution(dabank, fit.functions = "r2.m")
-```
-
-```{r}
-plot(dabank, which.graph ="general",fit.function = "r2.m")
-```
-
-To determine general dominance, we compute the mean of each predictor’s conditional measures.
-```{r}
-dominanceMatrix(dabank, type="general",fit.functions = "r2.m", ordered=TRUE)
-```
-
 ## Confusion matrix for unbalanced model
 ```{r}
 library(pROC)
 test$banklogpred <- predict(mybanklog2, newdata = test, type = "response")
 ```
-
 ```{r}
+library(data.table)
 cutoff <- 0.5
 predict <- test$banklogpred
 actual  <- relevel( as.factor( test$y ), "1" )
@@ -152,7 +103,58 @@ plot <- ggplot( result, aes( actual, predict, color = type ) ) +
 			ggtitle( sprintf( "Confusion Matrix with Cutoff at %.3f", cutoff ) )
 plot
 ```
+```{r}
+table(result$type)
+```
 
+## Find the best cutoff and cost
+```{r}
+library(ROCR)
+cost.fp <- 100
+cost.fn <- 200
+pred <- prediction(test$banklogpred, test$y)
+perf <- performance(pred,"tpr","fpr")
+roc_dt <- data.frame( fpr = perf@x.values[[1]], tpr = perf@y.values[[1]] )
+cost <- perf@x.values[[1]] * cost.fp * sum( test$y == 0 ) + 
+			( 1 - perf@y.values[[1]] ) * cost.fn * sum( test$y == 1 )
+cost_dt <- data.frame( cutoff = pred@cutoffs[[1]], cost = cost )
+best_index  <- which.min(cost)
+best_cost   <- cost_dt[ best_index, "cost" ]
+best_tpr    <- roc_dt[ best_index, "tpr" ]
+best_fpr    <- roc_dt[ best_index, "fpr" ]
+best_cutoff <- pred@cutoffs[[1]][ best_index ]
+best_cost
+best_cutoff
+```
+```{r} 
+# area under curve
+auc <- performance( pred, "auc" )@y.values[[1]]
+auc
+```
+
+```{r}
+# reconstruct the confusion matrix
+cutoff<-best_cutoff
+predict <- test$banklogpred
+actual  <- relevel( as.factor( test$y ), "1" )
+result <- data.table( actual = actual, predict = predict )
+result[ , type := ifelse( predict >= cutoff & actual == 1, "TP",
+					  ifelse( predict >= cutoff & actual == 0, "FP", 
+					  ifelse( predict <  cutoff & actual == 1, "FN", "TN" ) ) ) %>% as.factor() ]
+plot <- ggplot( result, aes( actual, predict, color = type ) ) + 
+			geom_violin( fill = "white", color = NA ) +
+			geom_jitter( shape = 1 ) + 
+			geom_hline( yintercept = cutoff, color = "blue", alpha = 0.6 ) + 
+			scale_y_continuous( limits = c( 0, 1 ) ) + 
+			scale_color_discrete( breaks = c( "TP", "FN", "FP", "TN" ) ) + # ordering of the legend 
+			guides( col = guide_legend( nrow = 2 ) ) + # adjust the legend to have two rows  
+			ggtitle( sprintf( "Confusion Matrix with Cutoff at %.3f", cutoff ) )
+plot
+```
+
+```{r}
+table(result$type)
+```
 
 # Balance the dataset
 ```{r}
@@ -167,6 +169,44 @@ table(bank_balanced_over$y)
 mybanklog2b <- glm(y ~ balance+housing+loan+duration+campaign, data = bank_balanced_over, family = "binomial")
 summary(mybanklog2b)
 ```
+
+## Null deviance
+Interpret the table of null deviance.
+```{r anova}
+anova(mybanklog2b, test="Chisq")
+```
+
+## McFadden
+Look at the McFadden value.
+```{r McF}
+library(pscl)
+pR2(mybanklog2b)
+```
+
+## Predictors importance using dominance analysis
+```{r da}
+library(dominanceanalysis)
+dabank <- dominanceAnalysis(mybanklog2b)
+```
+
+### complete dominance matrix
+```{r}
+dominanceMatrix(dabank, type="complete",fit.functions = "r2.m", ordered=TRUE)
+```
+
+This complete dominance matrix summarizes the relation between each pair of predictors. If the value between two predictors is 1, the predictor under the first column completely dominates the other predictor of the pair. If the value is 0, the predictor under the first column is completely dominated by the other predictor of the pair. Lastly, if the value is 0.5, complete dominance could not be established between the pair.
+
+### General dominance
+```{r}
+averageContribution(dabank, fit.functions = "r2.m")
+```
+
+```{r}
+plot(dabank, which.graph ="general",fit.function = "r2.m")
+```
+
+To determine general dominance, we compute the mean of each predictor’s conditional measures. We conclude that duration has the highest value (0.254) and generally dominates all other predictors.
+
 
 ## Training Set's Predicted Score
 ```{r}
@@ -183,7 +223,7 @@ scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) +
 theme_economist()
 ```
 
-## Confusion matrix
+## Confusion matrix at cutoff = 0.5
 ```{r}
 cutoff <- 0.5
 predict <- test$prediction
@@ -206,16 +246,12 @@ plot
 table(result$type)
 ```
 
-
-```{r}
-p_class<-as.factor(ifelse(result$predict>0.5, 1, 0))
-confusionMatrix(actual, p_class)
-```
 ## Find the best cutoff and cost
 ```{r}
 library(ROCR)
 cost.fp <- 100
 cost.fn <- 200
+# At cutoff = 0.5, cost = 200* 41 + 100 * 236 = 31800
 pred <- prediction(test$prediction, test$y)
 perf <- performance(pred,"tpr","fpr")
 roc_dt <- data.frame( fpr = perf@x.values[[1]], tpr = perf@y.values[[1]] )
@@ -262,7 +298,7 @@ auc
 
 ```{r}
 # reconstruct the confusion matrix
-cutoff<-0.703
+cutoff <- 0.703
 predict <- test$prediction
 actual  <- relevel( as.factor( test$y ), "1" )
 result <- data.table( actual = actual, predict = predict )
@@ -283,6 +319,7 @@ plot
 ```{r}
 table(result$type)
 ```
+
 #Interpretation and Reasoning
 ```{r}
 expcoeff = exp(coef(mybanklog2b))
