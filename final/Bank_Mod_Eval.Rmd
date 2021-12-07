@@ -79,7 +79,92 @@ mybanklog2 <- glm(y ~ balance+housing+loan+duration+campaign, data = train, fami
 summary(mybanklog2)
 ```
 
-## Confusion matrix for unbalanced model
+
+
+# Balance the dataset
+```{r}
+#install.packages("ROSE")
+library(ROSE)
+bank_balanced_over <- ovun.sample(y ~., data = train, method = "over", N = 5600)$data
+table(bank_balanced_over$y)
+```
+
+```{r}
+# using balanced dataset
+mybanklog2b <- glm(y ~ balance+housing+loan+duration+campaign, data = bank_balanced_over, family = "binomial")
+summary(mybanklog2b)
+```
+
+## Interpretation and Reasoning
+```{r}
+expcoeff = exp(coef(mybanklog2b))
+# expcoeff
+xkabledply( as.table(expcoeff), title = "Exponential of coefficients" )
+```
+
+
+### McFadden
+Look at the McFadden value.
+```{r McF}
+library(pscl)
+pR2(mybanklog2b)
+```
+
+With the McFadden value of 0.284, about 28.4% of the variations in y is explained by the explanatory variables in the model.
+
+## Predictors importance
+
+### Null deviance
+Interpret the table of null deviance.
+```{r anova}
+anova(mybanklog2b, test="Chisq")
+```
+
+In our case, we can see that adding duration alone reduces the deviance drastically (i.e., from 7507 to 5665). The small deviance value of slope indicates this variable does not add much to the model, meaning that almost the same amount of variation is explained when this variable is added.
+
+```{r da}
+library(dominanceanalysis)
+dabank <- dominanceAnalysis(mybanklog2b)
+```
+
+### Dominance analysis
+
+#### Complete dominance matrix
+```{r}
+dominanceMatrix(dabank, type="complete",fit.functions = "r2.m", ordered=TRUE)
+```
+
+This complete dominance matrix summarizes the relation between each pair of predictors. If the value between two predictors is 1, the predictor under the first column completely dominates the other predictor of the pair. If the value is 0, the predictor under the first column is completely dominated by the other predictor of the pair. Lastly, if the value is 0.5, complete dominance could not be established between the pair.
+
+#### General dominance
+```{r}
+averageContribution(dabank, fit.functions = "r2.m")
+```
+
+```{r}
+plot(dabank, which.graph ="general",fit.function = "r2.m")
+```
+
+To determine general dominance, we compute the mean of each predictor’s conditional measures. We conclude that duration has the highest value (0.254) and generally dominates all other predictors.
+
+
+## Training Set's Predicted Score
+```{r}
+library(ggthemes)
+# prediction
+train$prediction <- predict(mybanklog2b, newdata = train, type = "response" )
+test$prediction  <- predict(mybanklog2b, newdata = test , type = "response" )
+
+# distribution of the prediction score grouped by known outcome
+ggplot( train, aes( prediction, color = as.factor(y) ) ) + 
+geom_density( size = 1 ) +
+ggtitle( "Training Set's Predicted Score" ) + 
+scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) + 
+theme_economist()
+```
+
+## Cost of our models
+### Confusion matrix of unbalanced model at 0.5
 ```{r}
 library(pROC)
 test$banklogpred <- predict(mybanklog2, newdata = test, type = "response")
@@ -107,7 +192,7 @@ plot
 table(result$type)
 ```
 
-## Find the best cutoff and cost
+#### Find the best cutoff and cost
 ```{r}
 library(ROCR)
 cost.fp <- 100
@@ -127,6 +212,7 @@ best_cutoff <- pred@cutoffs[[1]][ best_index ]
 best_cost
 best_cutoff
 ```
+
 ```{r}
 normalize <- function(v) ( v - min(v) ) / diff( range(v) )
 col_ramp <- colorRampPalette( c( "green", "orange", "red", "black" ) )(100)   
@@ -140,6 +226,7 @@ roc_plot <- ggplot( roc_dt, aes( fpr, tpr ) ) +
   geom_vline( xintercept = best_fpr, alpha = 0.8, linetype = "dashed", color = "steelblue4" ) 
 roc_plot
 ```
+
 ```{r}
 cost_plot <- ggplot( cost_dt, aes( cutoff, cost ) ) +
                  geom_line( color = "blue", alpha = 0.5 ) +
@@ -149,15 +236,10 @@ cost_plot <- ggplot( cost_dt, aes( cutoff, cost ) ) +
                  geom_vline( xintercept = best_cutoff, alpha = 0.8, linetype = "dashed", color = "steelblue4" ) 
 cost_plot
 ```
-```{r} 
-# area under curve
-auc <- performance( pred, "auc" )@y.values[[1]]
-auc
-```
 
 ```{r}
 # reconstruct the confusion matrix
-cutoff<-best_cutoff
+cutoff <- 0.199
 predict <- test$banklogpred
 actual  <- relevel( as.factor( test$y ), "1" )
 result <- data.table( actual = actual, predict = predict )
@@ -179,84 +261,7 @@ plot
 table(result$type)
 ```
 
-# Balance the dataset
-```{r}
-#install.packages("ROSE")
-library(ROSE)
-bank_balanced_over <- ovun.sample(y ~., data = train, method = "over", N = 5600)$data
-table(bank_balanced_over$y)
-```
-
-```{r}
-# using balanced dataset
-mybanklog2b <- glm(y ~ balance+housing+loan+duration+campaign, data = bank_balanced_over, family = "binomial")
-summary(mybanklog2b)
-```
-
-## Interpretation and Reasoning
-```{r}
-expcoeff = exp(coef(mybanklog2b))
-# expcoeff
-xkabledply( as.table(expcoeff), title = "Exponential of coefficients" )
-```
-### Null deviance
-Interpret the table of null deviance.
-```{r anova}
-anova(mybanklog2b, test="Chisq")
-```
-
-In our case, we can see that adding duration alone reduces the deviance drastically (i.e., from 7507 to 5665). The small deviance value of slope indicates this variable does not add much to the model, meaning that almost the same amount of variation is explained when this variable is added.
-
-### McFadden
-Look at the McFadden value.
-```{r McF}
-library(pscl)
-pR2(mybanklog2b)
-```
-
-With the McFadden value of 0.284, about 28.4% of the variations in y is explained by the explanatory variables in the model.
-
-## Predictors importance using dominance analysis
-```{r da}
-library(dominanceanalysis)
-dabank <- dominanceAnalysis(mybanklog2b)
-```
-
-### complete dominance matrix
-```{r}
-dominanceMatrix(dabank, type="complete",fit.functions = "r2.m", ordered=TRUE)
-```
-
-This complete dominance matrix summarizes the relation between each pair of predictors. If the value between two predictors is 1, the predictor under the first column completely dominates the other predictor of the pair. If the value is 0, the predictor under the first column is completely dominated by the other predictor of the pair. Lastly, if the value is 0.5, complete dominance could not be established between the pair.
-
-### General dominance
-```{r}
-averageContribution(dabank, fit.functions = "r2.m")
-```
-
-```{r}
-plot(dabank, which.graph ="general",fit.function = "r2.m")
-```
-
-To determine general dominance, we compute the mean of each predictor’s conditional measures. We conclude that duration has the highest value (0.254) and generally dominates all other predictors.
-
-
-## Training Set's Predicted Score
-```{r}
-library(ggthemes)
-# prediction
-train$prediction <- predict(mybanklog2b, newdata = train, type = "response" )
-test$prediction  <- predict(mybanklog2b, newdata = test , type = "response" )
-
-# distribution of the prediction score grouped by known outcome
-ggplot( train, aes( prediction, color = as.factor(y) ) ) + 
-geom_density( size = 1 ) +
-ggtitle( "Training Set's Predicted Score" ) + 
-scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) + 
-theme_economist()
-```
-
-## Confusion matrix at cutoff = 0.5
+### Confusion matrix of balanced model at cutoff = 0.5
 ```{r}
 cutoff <- 0.5
 predict <- test$prediction
@@ -279,7 +284,7 @@ plot
 table(result$type)
 ```
 
-## Find the best cutoff and cost
+### Find the best cutoff and cost
 ```{r}
 library(ROCR)
 cost.fp <- 100
@@ -313,6 +318,7 @@ roc_plot <- ggplot( roc_dt, aes( fpr, tpr ) ) +
   geom_vline( xintercept = best_fpr, alpha = 0.8, linetype = "dashed", color = "steelblue4" ) 
 roc_plot
 ```
+
 ```{r}
 cost_plot <- ggplot( cost_dt, aes( cutoff, cost ) ) +
                  geom_line( color = "blue", alpha = 0.5 ) +
@@ -322,13 +328,6 @@ cost_plot <- ggplot( cost_dt, aes( cutoff, cost ) ) +
                  geom_vline( xintercept = best_cutoff, alpha = 0.8, linetype = "dashed", color = "steelblue4" ) 
 cost_plot
 ```
-
-```{r} 
-# area under curve
-auc <- performance( pred, "auc" )@y.values[[1]]
-auc
-```
-
 
 ```{r}
 # reconstruct the confusion matrix
