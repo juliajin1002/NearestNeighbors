@@ -79,7 +79,10 @@ mybanklog2 <- glm(y ~ balance+housing+loan+duration+campaign, data = train, fami
 summary(mybanklog2)
 ```
 
-
+```{r McF}
+library(pscl)
+pR2(mybanklog2)
+```
 
 # Balance the dataset
 ```{r}
@@ -105,7 +108,7 @@ xkabledply( as.table(expcoeff), title = "Exponential of coefficients" )
 
 ### McFadden
 Look at the McFadden value.
-```{r McF}
+```{r McFb}
 library(pscl)
 pR2(mybanklog2b)
 ```
