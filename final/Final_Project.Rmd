@@ -1,16 +1,23 @@
 ---
 title: "Final Project"
 author: "Chiemeziem Oguayo, Rhys Leahy, Chaoran Jin (Julia), Patrick Junghenn"
-date: "12/7/2021"
-output: html_document
+date: "`r Sys.Date()`"
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+    toc: true
+toc-title: "Table of Contents"
 ---
+
 ```{r init, include=F}
 # The package "ezids" (EZ Intro to Data Science) includes a lot of the helper functions we developed for the course. 
 # Some of the frequently used functions are loadPkg(), xkabledply(), xkablesummary(), uzscale(), etc.
 # Once installed, load the library.
 library(ezids)
-library(dplyr)
+library(tidyverse)
 library(ggplot2)
+library(ggthemes)
 library(modeest)
 library(ggeasy)
 library(skimr)
@@ -20,7 +27,32 @@ library(grid)
 library(broom)
 library(tidyr)
 library(scales)
+library(prettydoc)
+library(pROC)
+library(dominanceanalysis)
+library(caTools)
+library(ROSE)
+library(ROCR)
+library(pscl)
 ```
+
+# Introduction
+
+Advertising drives business, but even with advances in social media and advertising technology, we have a limited understanding of what influences customers to buy or not buy a certain product. If companies could predict whether an advertising campaign is likely to influence a potential customer to buy their product, they could more effectively target their campaigns to the most receptive customers, decrease their marketing costs, and increase their revenue. 
+
+To put these goals into practice, we analyzed a Portuguese bank's marketing campaign that took place between May 2008 and November 2010. During the campaign, telemarketers called potential customers to persuade them to subscribe to a bank term deposit. During these calls, they recorded key demographic information such as age, job, marital and education status. Telemarketers also noted
+information about customers' current accounts like balance, housing, loan, and default records, as well as data about the campaign itself including the timing and duration of their call. Critically, they also documented the outcome of their efforts: whether or not a potential customer subscribed to the bank term deposit. Using this dataset, we worked to answer the following questions:
+
+
+* Can we build a model that predicts whether or not bank customers are likely to subscribe to a term deposit despite a largely unbalanced dataset?
+
+* Given an unbalanced dataset, how much does a model built from a balanced dataset improve from the original model? 
+
+For these questions, our target variable is categorical: whether someone subscribed to the bank's product or not after engaging with an advertising campaign. Therefore, we cleaned, wrangled, and explored the bank's dataset and developed a logistic regression model to predict whether or not a customer subscribed to a bank term deposit after engaging with the marketing campaign. In total, this dataset contained 4507 observations and 17 variables. To deal with imbalanced responses from the observed marketing campaign, as there were many more 'No' than 'Yes' subscription responses, We used a combination of undersampling and oversampling techniques in our model development. Lastly we analyzed the best cutoff and minimized cost of our predictions, and explored the relative importance of each feature in our predictions. In this report we discuss in detail our methodology, results, and conclusions.
+
+By developing a model that effectively predicts whether or not a customer is likely to subscribe to a certain product,
+we can help this Portuguese bank more effectively target their advertising efforts with the ultimate goal of decreasing
+their marketing costs and increasing their subscription rates and revenue.
 
 ```{r setup, include=FALSE}
 # some of common options (and the defaults) are: 
@@ -37,11 +69,14 @@ options(scientific=T, digits = 3)
 # EDA
 ## The beginning
 
-```{r initial_data}
+First, we loaded the dataset and transformed all the variables to the correct (numeric) type. 
+Then, we checked the distribution of the dataset to account for any outliers before building our models. 
+
+```{r initial_data, include=F}
 bank <- data.frame(read.csv(file="bank.csv"))
 ```
 
-```{r change_data_type}
+```{r change_data_type, include=F}
 # changing the data types 
 bank[] <- lapply(bank, as.factor)
 bank$age <- as.numeric(bank$age)
@@ -53,51 +88,50 @@ bank$previous <- as.numeric(bank$previous)
 bank$pdays <- as.numeric(bank$pdays)
 ```
 
-```{r}
+```{r, echo=FALSE}
 # Checking for outliers
-boxplot(bank$age,ylab = 'age') 
+boxplot(bank$age,ylab = 'Age', main="Customer Age") 
 ```
+The boxplot above shows the distribution of the variable age and if it contains any outliers. It can be seen that the boxplot is skewed to the right and contains outliers at the upper end of the distribution.
 
-The boxplot above shows the distribution of the variable age and if it contains any outliers. It can be seen that the boxplot is skewed to the right and contains outliers at the upper end of the distribution
-
-```{r}
-boxplot(bank$balance,ylab = 'balance')
+```{r, echo=FALSE}
+boxplot(bank$balance,ylab = 'balance', main="Customer Account Balance")
 ```
 
 The boxplot above shows the distribution of the variable balance and if it contains any outliers. It can be seen that the boxplot is slightly skewed to the right. There are no outliers present.
 
-```{r}
-boxplot(bank$day, ylab = 'day')
+```{r, echo=FALSE}
+boxplot(bank$day, ylab = 'Day in a Month', main="Day of Call")
 ```
 
 The boxplot above shows the distribution of the variable dat and if it contains any outliers. It can be seen that the boxplot looks normally distributed and contains no outliers.
 
-```{r}
-boxplot(bank$duration, ylab = 'duration')
+```{r, echo=FALSE}
+boxplot(bank$duration, ylab = 'minutes', main="Duration of Call")
 ```
 
 The boxplot above shows the distribution of the variable duration and if it contains any outliers. It can be seen that the boxplot is highly skewed to the right and contains many outliers at the upper end of the distribution.
 
-```{r}
-boxplot(bank$campaign, ylab = 'campaign')
+```{r, echo=FALSE}
+boxplot(bank$campaign, ylab = 'number of contacts', main="Campaign Efforts")
 ```
 
 The boxplot above shows the distribution of the variable campaign and if it contains any outliers. It can be seen that the boxplot is skighly kewed to the right and contains many outliers at the upper end of the distribution.
 
-```{r}
-hist(bank$previous, ylab = 'previous')
+```{r, echo=FALSE}
+hist(bank$previous, ylab = 'Call Count Before Campaign', main="Prior Contacts")
 ```
 
 The histogram above shows the distribution of the variable previous. It can be seen that the distribution is highly skewed to the right.
 
-```{r}
-hist(bank$pdays, ylab = 'pdays')
+```{r, echo=FALSE}
+hist(bank$pdays, ylab = 'Days Since Previous Campaign', main="Campaign Lag")
 ```
 
 The histogram above shows the distribution of the variable pdays Similarly to the variable previous, the distribution is highly skewed to the right.
 
 ```{r remove_outliers}
-bank2 = outlierKD2(bank, age, rm=T, histogram = F)
+bank2 = outlierKD2(bank, age, rm=T, histogram = T)
 ```
 
 ## QQ-plot
@@ -144,11 +178,12 @@ qqnorm(bank2$pdays, main = "Pdays: Normal Q-Q Plot") + theme(plot.title = elemen
 
 The plot above shows that the variable pday does not follow a normal distribution.
 
-```{r}
+```{r, echo=FALSE}
 # lets check yes vs no: subscribed a deposity yes/no
 ggplot(bank2, aes( x = y, fill = y)) + geom_bar(colour = "black") + labs(x = "Response", y = "Count", fill = "Response") +
   ggtitle("Subcribed a Deposit: YES/NO") + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
-prop.table(table(bank2$y))
+out <- prop.table(table(bank2$y))
+out
 # way more no than yes - not balanced 
 # will have to correct this
 ```
@@ -159,7 +194,7 @@ The bar chart above shows the number of yes-no responses from the deposit subscr
 
 
 ## Visualizations
-```{r}
+```{r, echo=FALSE}
 ### JOBS vs SUBSCRIBED DEPOSIT
 
 ggplot(bank2, aes(x = job, fill = y)) + geom_bar(colour = "black") + labs( x = "", y = "Count", fill = "Response") +
@@ -168,7 +203,7 @@ ggplot(bank2, aes(x = job, fill = y)) + geom_bar(colour = "black") + labs( x = "
 
 The bar chart above shows the distribution of Job Type for individuals who responded to the survey  From the graph, individuals who had a job type of management responded yes to the survey more than individuals with any other job type. The job type technician has the second most yes responses. The categories with the largest proportion of no responses are entrepreneur, housemaid, unemployed, self-employed, student, and unknown.
 
-```{r}
+```{r, echo=FALSE}
 ### MARTIAL STATUS vs SUBSCRIBED DEPOSIT
 ggplot(bank2, aes(x = marital, fill = y)) + geom_bar(colour = "black") + labs( x = "Marital Status", y = "Count", fill = "Response") +
   ggtitle("Distribution of Marital Status") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
@@ -177,7 +212,7 @@ ggplot(bank2, aes(x = marital, fill = y)) + geom_bar(colour = "black") + labs( x
 The bar chart above shows the distribution of survey responses based on marital status. Married individuals answered yes more frequently than single and divorced individuals. The vast majority of divorced individuals answered no.
 
 
-```{r}
+```{r, echo=FALSE}
 ### EDUCATION vs SUBSCRIBED DEPOSIT
 ggplot(bank2, aes(x = education, fill = y)) + geom_bar(colour = "black") + labs( x = "Education", y = "Count", fill = "Response") +
   ggtitle("Distribution of Education Level") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
@@ -185,13 +220,13 @@ ggplot(bank2, aes(x = education, fill = y)) + geom_bar(colour = "black") + labs(
 
 The bar chart above shows the distribution of yes and no responses based on education level. Individuals with secondary level education responded yes more frequently than individuals with primary, secondary, and unknown. The vast majority of individuals with only a primary level of education responded no. The same is the case for individuals with an unknown education level.
 
-```{r}
+```{r, echo=FALSE}
 ###  DEFAULT STATUS
 ggplot(bank2, aes(x = default, fill = y)) + geom_bar(colour = "black") + labs( x = "Default Status", y = "Count", fill = "Response") +
   ggtitle("Distribution of Default Status") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
 ```
 The bar chart above shows the distribution of yes and no responses based on an individual's default status. The bar chart shows that individuals who have no default status answered yes more frequently. Barely any of the individuals who have a default status answered no.
-```{r}
+```{r, echo=FALSE}
 ### DISTRIBUTION OF AGE
 ggplot(bank2, aes(x = age, fill = y)) + geom_histogram(colour = "black", bins = 30) + labs( x = "Distribution of Age", y = "Count", fill = "Response") +
   ggtitle("Distribution of Age") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
@@ -199,7 +234,7 @@ ggplot(bank2, aes(x = age, fill = y)) + geom_histogram(colour = "black", bins = 
 
 The histogram above shows the distribution of the age of individuals who answered the survey. Most responses came from individuals in the approximate age range of 18 to 28. Individuals in that age range also gave the most yes responses. As age increases, the number of survey responses, as well as the number of yes responses decreases.
 
-```{r}
+```{r, echo=FALSE}
 ggplot(bank, aes(x = balance, fill = y)) + geom_histogram(colour = "black") + labs( x = "Balance", y = "Count", fill = "Response") +
   ggtitle("Distribution of Balance") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
 ```
@@ -208,8 +243,6 @@ The histogram above shows the distribution of the balance of the individuals who
 
 ## Data Partition
 ```{r}
-library(dominanceanalysis)
-library(caTools)
 set.seed(123)
 sample <- sample.split(bank2$y, SplitRatio = 0.7)
 train <- subset(bank2, sample == TRUE)
@@ -221,16 +254,18 @@ test  <- subset(bank2, sample == FALSE)
 
 Let's start building the model with backward stepwise reduction. Here we would drop the column 'job', 'day' and 'month'.
 
-```{r model}
+```{r echo = FALSE, results='markup'}
 mybanklog <- glm(y ~ age+marital+education+default+balance+housing+loan+contact+duration+campaign+pdays+previous+poutcome, data = train, family = "binomial")
 summary(mybanklog)
+xkabledply(mybanklog, title = "Unbalanced Model with Many Features")
 ```
 
 We would drop predictors that have p-values < 0.05, since they do not have significant effect on the model.
 
-```{r model_refine}
+```{r echo = FALSE, results='markup'}
 mybanklog2 <- glm(y ~ balance+housing+loan+duration+campaign, data = train, family = "binomial")
 summary(mybanklog2)
+xkabledply(mybanklog2, title = "Refined Model After Stepwise Reduction")
 ```
 
 Balance, housing, loan, duration, campaign are statistically significant predictors. Balance and duration have positive coefficients meaning y is associated with higher balance and longer calls. Housing, loan, and campaign have negative coefficients, meaning y is associated with not having housing, not having loan and fewer times of campaign.
@@ -241,16 +276,16 @@ Since our training set is extremely unbalanced, with far more 0's than 1's in y,
 
 ```{r balance, results=T}
 #install.packages("ROSE")
-library(ROSE)
 bank_balanced_over <- ovun.sample(y ~., data = train, method = "over", N = 5600)$data
 table(bank_balanced_over$y)
 ```
 
 Construct the model with the balanced dataset.
-```{r}
+```{r echo = FALSE, results='markup'}
 # using balanced dataset
 mybanklog2b <- glm(y ~ balance+housing+loan+duration+campaign, data = bank_balanced_over, family = "binomial")
 summary(mybanklog2b)
+xkabledply(mybanklog2, title = "Model from Balanced Dataset")
 ```
 
 
@@ -258,8 +293,7 @@ summary(mybanklog2b)
 
 For this section we start off by obtaining the predicted value that a client will subscribe to a term deposit on both training and testing set, after that we’ll perform a quick evaluation on the training set by plotting the probability (score) estimated by our model with a double density plot.
 
-```{r, include=TRUE}
-library(ggthemes)
+```{r, echo=FALSE}
 # prediction
 train$prediction <- predict(mybanklog2b, newdata = train, type = "response" )
 test$prediction  <- predict(mybanklog2b, newdata = test , type = "response" )
@@ -280,12 +314,11 @@ Our objective is choosing a cutoff that minimizes the cost of our models associa
 ## Unbalanced model 
 ### Confusion matrix at 0.5
 ```{r, echo=F}
-library(pROC)
 test$banklogpred <- predict(mybanklog2, newdata = test, type = "response")
 ```
 
 Let's first look at how the confusion matrix looks like when cutoff = 0.5
-```{r, include=T}
+```{r, echo=FALSE}
 library(data.table)
 cutoff <- 0.5
 predict <- test$banklogpred
@@ -316,7 +349,7 @@ table(result$type)
 In our case, an FN means that a client subscribed to a term deposit but our model fails to detect that. This is an expensive mistake because it means our client is not taken care of. Our bank have to compensate a lot for their mistake and the client may not choose any service from our bank in the future. An FP means that a client did not subscribe to a term deposit and our model told us that they did. As for conducting this kind of mistake, we might simply waste 5 minutes on a phone call with someone who did not choose our service.
 
 Let's assign a value to FP and FN and compute the cost. Here we let the cost of FN be 200 and the cost of FP be 100.
-```{r}
+```{r, results=T}
 library(ROCR)
 cost.fp <- 100
 cost.fn <- 200
@@ -338,7 +371,7 @@ best_cutoff
 The optimal cutoff is at 0.199 and the total cost is 26200. The cost at cutoff of 0.5 is 31800.
 
 ### ROC plot & Cost plot
-```{r}
+```{r, echo=FALSE}
 normalize <- function(v) ( v - min(v) ) / diff( range(v) )
 col_ramp <- colorRampPalette( c( "green", "orange", "red", "black" ) )(100)   
 col_by_cost <- col_ramp[ ceiling( normalize(cost) * 99 ) + 1 ]
@@ -354,7 +387,7 @@ roc_plot
 
 The color of the ROC curve indicates the cost associated with that cutoff value, the greener the lower. Here it suggest the optimal cutoff be around 0.12. 
 
-```{r}
+```{r, echo=FALSE}
 cost_plot <- ggplot( cost_dt, aes( cutoff, cost ) ) +
                  geom_line( color = "blue", alpha = 0.5 ) +
                  geom_point( color = col_by_cost, size = 4, alpha = 0.5 ) +
@@ -368,7 +401,7 @@ The cost plot calculates the the associated cost for choosing different cutoff v
 
 Reconstruct the confusion matrix at the opitmal cutoff (of the cost function).
 
-```{r}
+```{r, echo=FALSE}
 cutoff <- 0.199
 predict <- test$banklogpred
 actual  <- relevel( as.factor( test$y ), "1" )
@@ -387,7 +420,7 @@ plot <- ggplot( result, aes( actual, predict, color = type ) ) +
 plot
 ```
 
-```{r}
+```{r, results=T}
 table(result$type)
 ```
 
@@ -396,7 +429,7 @@ Although we almost have four times the cases of FP, we reduce the cases of FN by
 ## Balanced model
 
 ### Confusion matrix at cutoff = 0.5
-```{r}
+```{r, echo=FALSE}
 cutoff <- 0.5
 predict <- test$prediction
 actual  <- relevel( as.factor( test$y ), "1" )
@@ -418,13 +451,12 @@ plot
 With a balanced dataset, we have fewer cases of FN, but more cases of FP. We want to see if by raising the cutoff, we can decrease the cases of FP significantly by have a reasonably more cases of FN.
 
 Below are the exact number of each type of case.
-```{r}
+```{r, results=T}
 table(result$type)
 ```
 
 ### Find the best cutoff and minimal cost
-```{r cutoff2}
-library(ROCR)
+```{r cutoff2, results=T}
 cost.fp <- 100
 cost.fn <- 200
 # At cutoff = 0.5, cost = 200* 41 + 100 * 236 = 31800
@@ -446,7 +478,7 @@ best_cutoff
 The optimal cutoff is 0.703. The minimal cost is 25800. At cutoff = 0.5, the cost is 31800.
 
 ### ROC plot & Cost plot
-```{r, include=TRUE}
+```{r, echo=FALSE}
 normalize <- function(v) ( v - min(v) ) / diff( range(v) )
 col_ramp <- colorRampPalette( c( "green", "orange", "red", "black" ) )(100)   
 col_by_cost <- col_ramp[ ceiling( normalize(cost) * 99 ) + 1 ]
@@ -462,7 +494,7 @@ roc_plot
 
 The ROC curve suggests that the optimal cutoff be around 0.11.
 
-```{r}
+```{r, echo=FALSE}
 cost_plot <- ggplot( cost_dt, aes( cutoff, cost ) ) +
                  geom_line( color = "blue", alpha = 0.5 ) +
                  geom_point( color = col_by_cost, size = 4, alpha = 0.5 ) +
@@ -475,7 +507,7 @@ cost_plot
 The cost plot implies that the optimal cutoff is at 0.703. This is the most realistic cutoff we would choose since in real-life scenarios we may associate a 70% probability to success.
 
 Reconstruct the confusion matrix at the optimal cutoff (of the cost function).
-```{r}
+```{r, echo=FALSE}
 cutoff <- 0.703
 predict <- test$prediction
 actual  <- relevel( as.factor( test$y ), "1" )
@@ -494,7 +526,7 @@ plot <- ggplot( result, aes( actual, predict, color = type ) ) +
 plot
 ```
 
-```{r}
+```{r, results=T}
 table(result$type)
 ```
 
@@ -502,7 +534,7 @@ We have 31 more cases of FN but only less than half the cases of FP. We also red
 
 # Interpretation and Reasoning
 
-```{r}
+```{r, results=T}
 expcoeff = exp(coef(mybanklog2b))
 # expcoeff
 xkabledply( as.table(expcoeff), title = "Exponential of coefficients" )
@@ -513,8 +545,7 @@ From this table, every unit increase in balance means the probability of success
 ## McFadden
 
 Take a look at the McFadden value.
-```{r McFb}
-library(pscl)
+```{r McFb, results=T}
 pR2(mybanklog2b)
 ```
 
@@ -527,7 +558,7 @@ We would like to determine the relative importance of predictors in our model.
 ### Deviance
 
 Let's first interpret the table of null deviance.
-```{r anova}
+```{r anova, results=T}
 anova(mybanklog2b, test="Chisq")
 ```
 
@@ -536,7 +567,6 @@ In our case, we can see that adding duration alone reduces the deviance drastica
 
 ### Dominance analysis
 ```{r da, echo=F}
-library(dominanceanalysis)
 dabank <- dominanceAnalysis(mybanklog2b)
 ```
 
@@ -552,15 +582,24 @@ This matrix summarizes the relation between each pair of predictors. If the valu
 Here, duration is the most dominant predictor, housing second and there is no significant dominance amongst the rest three predictors.
 
 #### General dominance plot
-```{r}
+```{r, results=T}
 averageContribution(dabank, fit.functions = "r2.m")
 ```
 
-```{r}
+```{r, echo=FALSE}
 plot(dabank, which.graph ="general",fit.function = "r2.m")
 ```
 
 To determine general dominance, we compute the mean of each predictor’s conditional measures. We conclude that duration has the highest value (0.254) and generally dominates all other predictors. Housing has the next highest value (0.016). There is no significant difference in the value of the other three predictors.
+
+# Conclusion
+
+Ultimately, we were able to build a logistic regression model that predicted whether or not bank customers are likely to subscribe to a term deposit. Additionally, by balancing this largely imbalanced dataset and optimizing the cutoff, we were able to improve our model as measured by comparing AUC and McFadden scores across models. 
+
+Lastly, by conducting a dominance analysis, we found that the single most important predictor in our model was duration of the call. This has major implications for marketing campaigns -- namely the longer a telemarketer can keep a customer on the phone, the more likely they are to purchase or subscribe to a product. 
+
+Based on our findings, we hope that this Portuguese bank can more effectively target their advertising campaigns, decrease costs, and increase their revenue.
+
 
 # Reference
 Useful functions when working with logistic regression
