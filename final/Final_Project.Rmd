@@ -1,15 +1,21 @@
 ---
 title: "Final Project"
 author: "Chiemeziem Oguayo, Rhys Leahy, Chaoran Jin (Julia), Patrick Junghenn"
-date: "12/7/2021"
-output: html_document
+date: "`r Sys.Date()`"
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+    toc: true
+toc-title: "Table of Contents"
 ---
+
 ```{r init, include=F}
 # The package "ezids" (EZ Intro to Data Science) includes a lot of the helper functions we developed for the course. 
 # Some of the frequently used functions are loadPkg(), xkabledply(), xkablesummary(), uzscale(), etc.
 # Once installed, load the library.
 library(ezids)
-library(dplyr)
+library(tidyverse)
 library(ggplot2)
 library(modeest)
 library(ggeasy)
@@ -20,7 +26,27 @@ library(grid)
 library(broom)
 library(tidyr)
 library(scales)
+library(prettydoc)
+library(pROC)
 ```
+
+# Introduction
+
+Advertising drives business, but even with advances in social media and advertising technology, we have a limited understanding of what influences customers to buy or not buy a certain product. If companies could predict whether an advertising campaign is likely to influence a potential customer to buy their product, they could more effectively target their campaigns to the most receptive customers, decrease their marketing costs, and increase their revenue. 
+
+To put these goals into practice, we analyzed a Portuguese bank's marketing campaign that took place between May 2008 and November 2010. During the campaign, telemarketers called potential customers to persuade them to subscribe to a bank term deposit. During these calls, they recorded key demographic information, such as age, job, marital and education status. Telemarketers also noted
+information about customers' current accounts like balance, housing, loan, and default records, as well as data about the campaign itself including the timing and duration of their call. Critically, they also documented the outcome of their efforts: whether or not a potential customer subscribed to the bank term deposit. Using this dataset, we worked to answer the following questions:
+
+
+* Can we build a model that predicts whether or not bank customers are likely to subscribe to a term deposit despite a largely unbalanced dataset?
+
+* Given an unbalanced dataset, how much does a model built from a balanced dataset improve from the original model? 
+
+For these questions, our target variable is categorical: whether someone subscribed to the bank's product or not after engaging with an advertising campaign. Therefore, we cleaned, wrangled, and explored the bank's dataset and developed a logistic regression model to predict whether or not a customer subscribed to a bank term deposit. To deal with imbalanced responses from the observed marketing campaign, as there were many more 'No' than 'Yes' subscription responses, We also used a combination of undersampling and oversampling techniques in our model development. Lastly we analyze the best cutoff and minimized cost of our prediction, and explored the relative importance of each feature in our predictions. In this report we discuss in detail our methodology, results, and conclusions.
+
+By developing a model that effectively predicts whether or not a customer is likely to subscribe to a certain product,
+we can help this Portuguese bank more effectively target their advertising efforts, with the ultimate goal of decreasing
+their marketing costs and increasing their subscription rates and revenue.
 
 ```{r setup, include=FALSE}
 # some of common options (and the defaults) are: 
@@ -37,11 +63,14 @@ options(scientific=T, digits = 3)
 # EDA
 ## The beginning
 
-```{r initial_data}
+First, we loaded the dataset and transformed all the variables to the correct (numeric) type. 
+Then, we checked the distribution of the dataset to account for any outliers before building our models. 
+
+```{r initial_data, include=F}
 bank <- data.frame(read.csv(file="bank.csv"))
 ```
 
-```{r change_data_type}
+```{r change_data_type, include=F}
 # changing the data types 
 bank[] <- lapply(bank, as.factor)
 bank$age <- as.numeric(bank$age)
@@ -561,6 +590,10 @@ plot(dabank, which.graph ="general",fit.function = "r2.m")
 ```
 
 To determine general dominance, we compute the mean of each predictor’s conditional measures. We conclude that duration has the highest value (0.254) and generally dominates all other predictors. Housing has the next highest value (0.016). There is no significant difference in the value of the other three predictors.
+
+# Conclusion
+
+Loris ipsum.
 
 # Reference
 Useful functions when working with logistic regression
