@@ -53,17 +53,44 @@ bank$previous <- as.numeric(bank$previous)
 bank$pdays <- as.numeric(bank$pdays)
 ```
 
-## Check outliers
 ```{r}
 # Checking for outliers
 boxplot(bank$age,ylab = 'age') 
+```
+The boxplot above shows the distribution of the variable age and if it contains any outliers. It can be seen that the boxplot is skewed to the right and contains outliers at the upper end of the distribution
+
+```{r}
 boxplot(bank$balance,ylab = 'balance')
+```
+The boxplot above shows the distribution of the variable balance and if it contains any outliers. It can be seen that the boxplot is slightly skewed to the right. There are no outliers present.
+
+```{r}
 boxplot(bank$day, ylab = 'day')
+```
+
+The boxplot above shows the distribution of the variable dat and if it contains any outliers. It can be seen that the boxplot looks normally distributed and contains no outliers.
+
+```{r}
 boxplot(bank$duration, ylab = 'duration')
+```
+The boxplot above shows the distribution of the variable duration and if it contains any outliers. It can be seen that the boxplot is highly skewed to the right and contains many outliers at the upper end of the distribution.
+
+```{r}
 boxplot(bank$campaign, ylab = 'campaign')
+```
+The boxplot above shows the distribution of the variable campaign and if it contains any outliers. It can be seen that the boxplot is skighly kewed to the right and contains many outliers at the upper end of the distribution.
+
+
+
+```{r}
 hist(bank$previous, ylab = 'previous')
+```
+The histogram above shows the distribution of the variable previous. It can be seen that the distribution is highly skewed to the right.
+```{r}
 hist(bank$pdays, ylab = 'pdays')
 ```
+The histogram above shows the distribution of the variable pdays Similarly to the variable previous, the distribution is highly skewed to the right.
+
 ```{r remove_outliers}
 bank2 = outlierKD2(bank, age, rm=T, histogram = F)
 ```
@@ -71,28 +98,42 @@ bank2 = outlierKD2(bank, age, rm=T, histogram = F)
 ## QQ-plot
 ```{r}
 qqnorm(bank2$age, main = "Age: Normal Q-Q Plot") + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
-qqline(bank2$age, col= "steelblue", lwd = 2)
+```
+The qq-plot above shows the distribution of the variable age. The plot looks straight, indicating that it follows a normal distribution.
+```{r}
+qqnorm(bank2$balance, main = "Balance: Normal Q-Q Plot") + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+The qq-plot above shows the distribution for the variable, balance. The plot indicates that it does not follow a normal distribution.
 
-qqnorm(bank2$balance)
-qqline(bank2$balance, col= "steelblue", lwd = 2)
 
-qqnorm(bank2$day)
-qqline(bank2$day, col= "steelblue", lwd = 2)
-
-qqnorm(bank2$duration)
-qqline(bank2$duration, col= "steelblue", lwd = 2)
-
-qqnorm(bank2$campaign)
-qqline(bank2$campaign, col= "steelblue", lwd = 2)
-
-qqnorm(bank2$previous)
-qqline(bank2$previous, col= "steelblue", lwd = 2)
-
-qqnorm(bank2$pdays)
-qqline(bank2$pdays, col= "steelblue", lwd = 2)
-
+```{r}
+qqnorm(bank2$day, main = "Day: Normal Q-Q Plot") + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 ```
 
+The plot above shows that the variable day does not follow a normal distribution.
+
+```{r}
+qqnorm(bank2$duration, main = "Duration: Normal Q-Q Plot") + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+The plot above shows that the variable duration does not follow a normal distribution.
+
+
+```{r}
+qqnorm(bank2$campaign, main = "Campaign: Normal Q-Q Plot") + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+The plot above shows that the variable campaign does not follow a normal distribution.
+
+```{r}
+qqnorm(bank2$previous, main = "Previous: Normal Q-Q Plot") + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+The plot above shows that the variable previous does not follow a normal distribution
+
+
+```{r}
+qqnorm(bank2$pdays, main = "Pdays: Normal Q-Q Plot") + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+
+```
+The plot above shows that the variable pday does not follow a normal distribution.
 ```{r}
 # lets check yes vs no: subscribed a deposity yes/no
 ggplot(bank2, aes( x = y, fill = y)) + geom_bar(colour = "black") + labs(x = "Response", y = "Count", fill = "Response") +
@@ -101,6 +142,10 @@ prop.table(table(bank2$y))
 # way more no than yes - not balanced 
 # will have to correct this
 ```
+The bar chart above shows the number of yes-no responses from the deposit subscription survey. Red indicates a no response and green indicates a yes response. From the chart, it is evident that there were many more no responses than yes responses. This shows that the data is extremely imbalanced. The actual proportions are .885 no responses and .115 yes responses.
+ 0     1 
+0.885 0.115 
+
 
 ## Visualizations
 ```{r}
@@ -109,35 +154,40 @@ prop.table(table(bank2$y))
 ggplot(bank2, aes(x = job, fill = y)) + geom_bar(colour = "black") + labs( x = "", y = "Count", fill = "Response") +
   ggtitle("Distribution of Job Type") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15, axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 1))                                                                                                                                                   
 ```
+The bar chart above shows the distribution of Job Type for individuals who responded to the survey  From the graph, individuals who had a job type of management responded yes to the survey more than individuals with any other job type. The job type technician has the second most yes responses. The categories with the largest proportion of no responses are entrepreneur, housemaid, unemployed, self-employed, student, and unknown.
 
 ```{r}
 ### MARTIAL STATUS vs SUBSCRIBED DEPOSIT
 ggplot(bank2, aes(x = marital, fill = y)) + geom_bar(colour = "black") + labs( x = "Marital Status", y = "Count", fill = "Response") +
   ggtitle("Distribution of Marital Status") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
 ```
+The bar chart above shows the distribution of survey responses based on marital status. Married individuals answered yes more frequently than single and divorced individuals. The vast majority of divorced individuals answered no.
+
 
 ```{r}
 ### EDUCATION vs SUBSCRIBED DEPOSIT
 ggplot(bank2, aes(x = education, fill = y)) + geom_bar(colour = "black") + labs( x = "Education", y = "Count", fill = "Response") +
   ggtitle("Distribution of Education Level") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
 ```
+The bar chart above shows the distribution of yes and no responses based on education level. Individuals with secondary level education responded yes more frequently than individuals with primary, secondary, and unknown. The vast majority of individuals with only a primary level of education responded no. The same is the case for individuals with an unknown education level.
 
 ```{r}
 ###  DEFAULT STATUS
 ggplot(bank2, aes(x = default, fill = y)) + geom_bar(colour = "black") + labs( x = "Default Status", y = "Count", fill = "Response") +
   ggtitle("Distribution of Default Status") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
 ```
-
+The bar chart above shows the distribution of yes and no responses based on an individual's default status. The bar chart shows that individuals who have no default status answered yes more frequently. Barely any of the individuals who have a default status answered no.
 ```{r}
 ### DISTRIBUTION OF AGE
 ggplot(bank2, aes(x = age, fill = y)) + geom_histogram(colour = "black", bins = 30) + labs( x = "Distribution of Age", y = "Count", fill = "Response") +
-  ggtitle("Distribution of Marital Status") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
+  ggtitle("Distribution of Age") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
 ```
-
+The histogram above shows the distribution of the age of individuals who answered the survey. Most responses came from individuals in the approximate age range of 18 to 28. Individuals in that age range also gave the most yes responses. As age increases, the number of survey responses, as well as the number of yes responses decreases.
 ```{r}
 ggplot(bank, aes(x = balance, fill = y)) + geom_histogram(colour = "black") + labs( x = "Balance", y = "Count", fill = "Response") +
   ggtitle("Distribution of Balance") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
 ```
+The histogram above shows the distribution of the balance of the individuals who responded to the survey. Most responses came from individuals with a balance of about $250. As the balance increases, the number of responses decreases. Individuals with a balance of about 250 gave the most yes responses, whereas almost no individuals with a 0 balance or a balance above about 2100 responded yes.
 
 ## Data Partition
 ```{r}
