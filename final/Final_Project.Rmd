@@ -201,20 +201,28 @@ test  <- subset(bank2, sample == FALSE)
 
 # Model Construction 
 ## Without balancing
+
+Let's start building the model with backward stepwise reduction technique. Here we would drop the column 'job', 'day' and 'month'.
+
 ```{r model}
 mybanklog <- glm(y ~ age+marital+education+default+balance+housing+loan+contact+duration+campaign+pdays+previous+poutcome, data = train, family = "binomial")
 summary(mybanklog)
 ```
+
+We would drop predictors that have p-values < 0.05, since they do not have significant effect on the model.
 
 ```{r model_refine}
 mybanklog2 <- glm(y ~ balance+housing+loan+duration+campaign, data = train, family = "binomial")
 summary(mybanklog2)
 ```
 
+Balance, housing, loan, duration, campaign are statistically significant predictors. Balance and duration have positive coefficients meaning y is associated with higher balance and longer calls. Housing, loan, and campaign have negative coefficients, meaning y is associated with not having housing, not having loan and fewer times of campaign.
+
 ```{r McF}
 library(pscl)
 pR2(mybanklog2)
 ```
+
 
 ## Balance the dataset
 ```{r}
@@ -458,7 +466,7 @@ With the McFadden value of 0.284, about 28.4% of the variations in y is explaine
 
 ## Predictors importance
 
-### Null deviance
+### Deviance
 Interpret the table of null deviance.
 ```{r anova}
 anova(mybanklog2b, test="Chisq")
