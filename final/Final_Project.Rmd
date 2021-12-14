@@ -57,11 +57,13 @@ bank$pdays <- as.numeric(bank$pdays)
 # Checking for outliers
 boxplot(bank$age,ylab = 'age') 
 ```
+
 The boxplot above shows the distribution of the variable age and if it contains any outliers. It can be seen that the boxplot is skewed to the right and contains outliers at the upper end of the distribution
 
 ```{r}
 boxplot(bank$balance,ylab = 'balance')
 ```
+
 The boxplot above shows the distribution of the variable balance and if it contains any outliers. It can be seen that the boxplot is slightly skewed to the right. There are no outliers present.
 
 ```{r}
@@ -73,22 +75,25 @@ The boxplot above shows the distribution of the variable dat and if it contains 
 ```{r}
 boxplot(bank$duration, ylab = 'duration')
 ```
+
 The boxplot above shows the distribution of the variable duration and if it contains any outliers. It can be seen that the boxplot is highly skewed to the right and contains many outliers at the upper end of the distribution.
 
 ```{r}
 boxplot(bank$campaign, ylab = 'campaign')
 ```
+
 The boxplot above shows the distribution of the variable campaign and if it contains any outliers. It can be seen that the boxplot is skighly kewed to the right and contains many outliers at the upper end of the distribution.
-
-
 
 ```{r}
 hist(bank$previous, ylab = 'previous')
 ```
+
 The histogram above shows the distribution of the variable previous. It can be seen that the distribution is highly skewed to the right.
+
 ```{r}
 hist(bank$pdays, ylab = 'pdays')
 ```
+
 The histogram above shows the distribution of the variable pdays Similarly to the variable previous, the distribution is highly skewed to the right.
 
 ```{r remove_outliers}
@@ -99,12 +104,14 @@ bank2 = outlierKD2(bank, age, rm=T, histogram = F)
 ```{r}
 qqnorm(bank2$age, main = "Age: Normal Q-Q Plot") + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 ```
+
 The qq-plot above shows the distribution of the variable age. The plot looks straight, indicating that it follows a normal distribution.
+
 ```{r}
 qqnorm(bank2$balance, main = "Balance: Normal Q-Q Plot") + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 ```
-The qq-plot above shows the distribution for the variable, balance. The plot indicates that it does not follow a normal distribution.
 
+The qq-plot above shows the distribution for the variable, balance. The plot indicates that it does not follow a normal distribution.
 
 ```{r}
 qqnorm(bank2$day, main = "Day: Normal Q-Q Plot") + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
@@ -115,25 +122,28 @@ The plot above shows that the variable day does not follow a normal distribution
 ```{r}
 qqnorm(bank2$duration, main = "Duration: Normal Q-Q Plot") + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 ```
-The plot above shows that the variable duration does not follow a normal distribution.
 
+The plot above shows that the variable duration does not follow a normal distribution.
 
 ```{r}
 qqnorm(bank2$campaign, main = "Campaign: Normal Q-Q Plot") + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 ```
+
 The plot above shows that the variable campaign does not follow a normal distribution.
 
 ```{r}
 qqnorm(bank2$previous, main = "Previous: Normal Q-Q Plot") + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 ```
-The plot above shows that the variable previous does not follow a normal distribution
 
+The plot above shows that the variable previous does not follow a normal distribution
 
 ```{r}
 qqnorm(bank2$pdays, main = "Pdays: Normal Q-Q Plot") + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 
 ```
+
 The plot above shows that the variable pday does not follow a normal distribution.
+
 ```{r}
 # lets check yes vs no: subscribed a deposity yes/no
 ggplot(bank2, aes( x = y, fill = y)) + geom_bar(colour = "black") + labs(x = "Response", y = "Count", fill = "Response") +
@@ -142,6 +152,7 @@ prop.table(table(bank2$y))
 # way more no than yes - not balanced 
 # will have to correct this
 ```
+
 The bar chart above shows the number of yes-no responses from the deposit subscription survey. Red indicates a no response and green indicates a yes response. From the chart, it is evident that there were many more no responses than yes responses. This shows that the data is extremely imbalanced. The actual proportions are .885 no responses and .115 yes responses.
  0     1 
 0.885 0.115 
@@ -154,6 +165,7 @@ The bar chart above shows the number of yes-no responses from the deposit subscr
 ggplot(bank2, aes(x = job, fill = y)) + geom_bar(colour = "black") + labs( x = "", y = "Count", fill = "Response") +
   ggtitle("Distribution of Job Type") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15, axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 1))                                                                                                                                                   
 ```
+
 The bar chart above shows the distribution of Job Type for individuals who responded to the survey  From the graph, individuals who had a job type of management responded yes to the survey more than individuals with any other job type. The job type technician has the second most yes responses. The categories with the largest proportion of no responses are entrepreneur, housemaid, unemployed, self-employed, student, and unknown.
 
 ```{r}
@@ -161,6 +173,7 @@ The bar chart above shows the distribution of Job Type for individuals who respo
 ggplot(bank2, aes(x = marital, fill = y)) + geom_bar(colour = "black") + labs( x = "Marital Status", y = "Count", fill = "Response") +
   ggtitle("Distribution of Marital Status") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
 ```
+
 The bar chart above shows the distribution of survey responses based on marital status. Married individuals answered yes more frequently than single and divorced individuals. The vast majority of divorced individuals answered no.
 
 
@@ -169,6 +182,7 @@ The bar chart above shows the distribution of survey responses based on marital 
 ggplot(bank2, aes(x = education, fill = y)) + geom_bar(colour = "black") + labs( x = "Education", y = "Count", fill = "Response") +
   ggtitle("Distribution of Education Level") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
 ```
+
 The bar chart above shows the distribution of yes and no responses based on education level. Individuals with secondary level education responded yes more frequently than individuals with primary, secondary, and unknown. The vast majority of individuals with only a primary level of education responded no. The same is the case for individuals with an unknown education level.
 
 ```{r}
@@ -182,11 +196,14 @@ The bar chart above shows the distribution of yes and no responses based on an i
 ggplot(bank2, aes(x = age, fill = y)) + geom_histogram(colour = "black", bins = 30) + labs( x = "Distribution of Age", y = "Count", fill = "Response") +
   ggtitle("Distribution of Age") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
 ```
+
 The histogram above shows the distribution of the age of individuals who answered the survey. Most responses came from individuals in the approximate age range of 18 to 28. Individuals in that age range also gave the most yes responses. As age increases, the number of survey responses, as well as the number of yes responses decreases.
+
 ```{r}
 ggplot(bank, aes(x = balance, fill = y)) + geom_histogram(colour = "black") + labs( x = "Balance", y = "Count", fill = "Response") +
   ggtitle("Distribution of Balance") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
 ```
+
 The histogram above shows the distribution of the balance of the individuals who responded to the survey. Most responses came from individuals with a balance of about $250. As the balance increases, the number of responses decreases. Individuals with a balance of about 250 gave the most yes responses, whereas almost no individuals with a 0 balance or a balance above about 2100 responded yes.
 
 ## Data Partition
@@ -201,29 +218,35 @@ test  <- subset(bank2, sample == FALSE)
 
 # Model Construction 
 ## Without balancing
+
+Let's start building the model with backward stepwise reduction. Here we would drop the column 'job', 'day' and 'month'.
+
 ```{r model}
 mybanklog <- glm(y ~ age+marital+education+default+balance+housing+loan+contact+duration+campaign+pdays+previous+poutcome, data = train, family = "binomial")
 summary(mybanklog)
 ```
+
+We would drop predictors that have p-values < 0.05, since they do not have significant effect on the model.
 
 ```{r model_refine}
 mybanklog2 <- glm(y ~ balance+housing+loan+duration+campaign, data = train, family = "binomial")
 summary(mybanklog2)
 ```
 
-```{r McF}
-library(pscl)
-pR2(mybanklog2)
-```
+Balance, housing, loan, duration, campaign are statistically significant predictors. Balance and duration have positive coefficients meaning y is associated with higher balance and longer calls. Housing, loan, and campaign have negative coefficients, meaning y is associated with not having housing, not having loan and fewer times of campaign.
 
 ## Balance the dataset
-```{r}
+
+Since our training set is extremely unbalanced, with far more 0's than 1's in y, let's construct a model with a more balanced training set. Here, using the `ovun.sample` function in the `ROSE` package, we would under-sample cases of 0 and over-sample cases of 1.
+
+```{r balance, results=T}
 #install.packages("ROSE")
 library(ROSE)
 bank_balanced_over <- ovun.sample(y ~., data = train, method = "over", N = 5600)$data
 table(bank_balanced_over$y)
 ```
 
+Construct the model with the balanced dataset.
 ```{r}
 # using balanced dataset
 mybanklog2b <- glm(y ~ balance+housing+loan+duration+campaign, data = bank_balanced_over, family = "binomial")
@@ -232,7 +255,10 @@ summary(mybanklog2b)
 
 
 # Training Set's Predicted Score
-```{r}
+
+For this section we start off by obtaining the predicted value that a client will subscribe to a term deposit on both training and testing set, after that we’ll perform a quick evaluation on the training set by plotting the probability (score) estimated by our model with a double density plot.
+
+```{r, include=TRUE}
 library(ggthemes)
 # prediction
 train$prediction <- predict(mybanklog2b, newdata = train, type = "response" )
@@ -246,14 +272,20 @@ scale_color_economist( name = "data", labels = c( "negative", "positive" ) ) +
 theme_economist()
 ```
 
+Given that our model’s final objective is to classify new instances into one of two categories, whether the client will subscribe to a term deposit, we will want the model to give high scores to positive instances and low scores otherwise. Thus for a ideal double density plot you want the distribution of scores to be separated, with the score of the negative instances to be on the left and the score of the positive instance to be on the right. In this case, our model indeed displays this pattern.
+
 # Cost of our models
+Our objective is choosing a cutoff that minimizes the cost of our models associated with making FP's and FN's.
+
 ## Unbalanced model 
 ### Confusion matrix at 0.5
-```{r}
+```{r, echo=F}
 library(pROC)
 test$banklogpred <- predict(mybanklog2, newdata = test, type = "response")
 ```
-```{r}
+
+Let's first look at how the confusion matrix looks like when cutoff = 0.5
+```{r, include=T}
 library(data.table)
 cutoff <- 0.5
 predict <- test$banklogpred
@@ -272,16 +304,22 @@ plot <- ggplot( result, aes( actual, predict, color = type ) ) +
 			ggtitle( sprintf( "Confusion Matrix with Cutoff at %.3f", cutoff ) )
 plot
 ```
-```{r}
+
+Because our dataset is heavily unbalanced, we have very few positive instances, thus our model will be less likely to make an FN mistake. If we raise the cutoff, we will increase our model’s accuracy, since we will turn FP into TN.
+Below are the exact number of each type of case.
+```{r, results=T}
 table(result$type)
 ```
 
 ### Find the best cutoff and minimal cost
+
+In our case, an FN means that a client subscribed to a term deposit but our model fails to detect that. This is an expensive mistake because it means our client is not taken care of. Our bank have to compensate a lot for their mistake and the client may not choose any service from our bank in the future. An FP means that a client did not subscribe to a term deposit and our model told us that they did. As for conducting this kind of mistake, we might simply waste 5 minutes on a phone call with someone who did not choose our service.
+
+Let's assign a value to FP and FN and compute the cost. Here we let the cost of FN be 200 and the cost of FP be 100.
 ```{r}
 library(ROCR)
 cost.fp <- 100
 cost.fn <- 200
-# At cutoff = 0.5, cost = 200* 127 + 100 * 33 = 31800
 pred <- prediction(test$banklogpred, test$y)
 perf <- performance(pred,"tpr","fpr")
 roc_dt <- data.frame( fpr = perf@x.values[[1]], tpr = perf@y.values[[1]] )
@@ -297,6 +335,8 @@ best_cost
 best_cutoff
 ```
 
+The optimal cutoff is at 0.199 and the total cost is 26200. The cost at cutoff of 0.5 is 31800.
+
 ### ROC plot & Cost plot
 ```{r}
 normalize <- function(v) ( v - min(v) ) / diff( range(v) )
@@ -306,11 +346,13 @@ roc_plot <- ggplot( roc_dt, aes( fpr, tpr ) ) +
   geom_line( color = rgb( 0, 0, 1, alpha = 0.3 ) ) +
   geom_point( color = col_by_cost, size = 4, alpha = 0.2 ) + 
   geom_segment( aes( x = 0, y = 0, xend = 1, yend = 1 ), alpha = 0.8, color = "royalblue" ) + 
-  labs( title = "ROC", x = "False Postive Rate", y = "True Positive Rate" ) +
+  labs( title = "ROC Unbalanced", x = "False Postive Rate", y = "True Positive Rate" ) +
   geom_hline( yintercept = best_tpr, alpha = 0.8, linetype = "dashed", color = "steelblue4" ) +
   geom_vline( xintercept = best_fpr, alpha = 0.8, linetype = "dashed", color = "steelblue4" ) 
 roc_plot
 ```
+
+The color of the ROC curve indicates the cost associated with that cutoff value, the greener the lower. Here it suggest the optimal cutoff be around 0.12. 
 
 ```{r}
 cost_plot <- ggplot( cost_dt, aes( cutoff, cost ) ) +
@@ -322,7 +364,10 @@ cost_plot <- ggplot( cost_dt, aes( cutoff, cost ) ) +
 cost_plot
 ```
 
-### reconstruct the confusion matrix at best_cutoff
+The cost plot calculates the the associated cost for choosing different cutoff value and the optimal cutoff is at 0.199.
+
+Reconstruct the confusion matrix at the opitmal cutoff (of the cost function).
+
 ```{r}
 cutoff <- 0.199
 predict <- test$banklogpred
@@ -346,7 +391,10 @@ plot
 table(result$type)
 ```
 
+Although we almost have four times the cases of FP, we reduce the cases of FN by half and reduce the total cost by 5600.
+
 ## Balanced model
+
 ### Confusion matrix at cutoff = 0.5
 ```{r}
 cutoff <- 0.5
@@ -366,12 +414,16 @@ plot <- ggplot( result, aes( actual, predict, color = type ) ) +
 			ggtitle( sprintf( "Confusion Matrix with Cutoff at %.3f", cutoff ) )
 plot
 ```
+
+With a balanced dataset, we have fewer cases of FN, but more cases of FP. We want to see if by raising the cutoff, we can decrease the cases of FP significantly by have a reasonably more cases of FN.
+
+Below are the exact number of each type of case.
 ```{r}
 table(result$type)
 ```
 
 ### Find the best cutoff and minimal cost
-```{r}
+```{r cutoff2}
 library(ROCR)
 cost.fp <- 100
 cost.fn <- 200
@@ -391,8 +443,10 @@ best_cost
 best_cutoff
 ```
 
+The optimal cutoff is 0.703. The minimal cost is 25800. At cutoff = 0.5, the cost is 31800.
+
 ### ROC plot & Cost plot
-```{r}
+```{r, include=TRUE}
 normalize <- function(v) ( v - min(v) ) / diff( range(v) )
 col_ramp <- colorRampPalette( c( "green", "orange", "red", "black" ) )(100)   
 col_by_cost <- col_ramp[ ceiling( normalize(cost) * 99 ) + 1 ]
@@ -406,6 +460,8 @@ roc_plot <- ggplot( roc_dt, aes( fpr, tpr ) ) +
 roc_plot
 ```
 
+The ROC curve suggests that the optimal cutoff be around 0.11.
+
 ```{r}
 cost_plot <- ggplot( cost_dt, aes( cutoff, cost ) ) +
                  geom_line( color = "blue", alpha = 0.5 ) +
@@ -416,7 +472,9 @@ cost_plot <- ggplot( cost_dt, aes( cutoff, cost ) ) +
 cost_plot
 ```
 
-### reconstruct the confusion matrix at best_cutoff
+The cost plot implies that the optimal cutoff is at 0.703. This is the most realistic cutoff we would choose since in real-life scenarios we may associate a 70% probability to success.
+
+Reconstruct the confusion matrix at the optimal cutoff (of the cost function).
 ```{r}
 cutoff <- 0.703
 predict <- test$prediction
@@ -440,15 +498,21 @@ plot
 table(result$type)
 ```
 
+We have 31 more cases of FN but only less than half the cases of FP. We also reduce the cost by 6000.
+
 # Interpretation and Reasoning
+
 ```{r}
 expcoeff = exp(coef(mybanklog2b))
 # expcoeff
 xkabledply( as.table(expcoeff), title = "Exponential of coefficients" )
 ```
 
+From this table, every unit increase in balance means the probability of success is 1.000 time higher, i.e. close to no change. Every unit increase in duration means the probability of sucess is 1.006 times higher. Every unit increase in campaign means the probability of success is 0.876 times higher. The probability of success is 0.465 times higher if housing is 1 compared to 0. The porbability of success is 0.366 higher if loan is 1 compared to 0.
+
 ## McFadden
-Look at the McFadden value.
+
+Take a look at the McFadden value.
 ```{r McFb}
 library(pscl)
 pR2(mybanklog2b)
@@ -458,29 +522,36 @@ With the McFadden value of 0.284, about 28.4% of the variations in y is explaine
 
 ## Predictors importance
 
-### Null deviance
-Interpret the table of null deviance.
+We would like to determine the relative importance of predictors in our model.
+
+### Deviance
+
+Let's first interpret the table of null deviance.
 ```{r anova}
 anova(mybanklog2b, test="Chisq")
 ```
 
-In our case, we can see that adding duration alone reduces the deviance drastically (i.e., from 7507 to 5665). The small deviance value of slope indicates this variable does not add much to the model, meaning that almost the same amount of variation is explained when this variable is added.
+In our case, we can see that adding duration alone reduces the deviance drastically (from 7507 to 5665). Adding housing also reduces the deviance by 100. The small reduction in deviance of the other three variables indicates they do not add much to the model, meaning that almost the same amount of variation is explained by balance, loan and campaign.
 
-```{r da}
+
+### Dominance analysis
+```{r da, echo=F}
 library(dominanceanalysis)
 dabank <- dominanceAnalysis(mybanklog2b)
 ```
 
-### Dominance analysis
-
 #### Complete dominance matrix
-```{r}
+
+Let's display the complete dominance matrix.
+```{r, results=T}
 dominanceMatrix(dabank, type="complete",fit.functions = "r2.m", ordered=TRUE)
 ```
 
-This complete dominance matrix summarizes the relation between each pair of predictors. If the value between two predictors is 1, the predictor under the first column completely dominates the other predictor of the pair. If the value is 0, the predictor under the first column is completely dominated by the other predictor of the pair. Lastly, if the value is 0.5, complete dominance could not be established between the pair.
+This matrix summarizes the relation between each pair of predictors. If the value between two predictors is 1, the predictor under the first column completely dominates the other predictor of the pair. If the value is 0, the predictor under the first column is completely dominated by the other predictor of the pair. Lastly, if the value is 0.5, complete dominance could not be established between the pair.
 
-#### General dominance
+Here, duration is the most dominant predictor, housing second and there is no significant dominance amongst the rest three predictors.
+
+#### General dominance plot
 ```{r}
 averageContribution(dabank, fit.functions = "r2.m")
 ```
@@ -489,7 +560,7 @@ averageContribution(dabank, fit.functions = "r2.m")
 plot(dabank, which.graph ="general",fit.function = "r2.m")
 ```
 
-To determine general dominance, we compute the mean of each predictor’s conditional measures. We conclude that duration has the highest value (0.254) and generally dominates all other predictors.
+To determine general dominance, we compute the mean of each predictor’s conditional measures. We conclude that duration has the highest value (0.254) and generally dominates all other predictors. Housing has the next highest value (0.016). There is no significant difference in the value of the other three predictors.
 
 # Reference
 Useful functions when working with logistic regression
