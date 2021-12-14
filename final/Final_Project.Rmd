@@ -17,6 +17,7 @@ toc-title: "Table of Contents"
 library(ezids)
 library(tidyverse)
 library(ggplot2)
+library(ggthemes)
 library(modeest)
 library(ggeasy)
 library(skimr)
@@ -28,6 +29,9 @@ library(tidyr)
 library(scales)
 library(prettydoc)
 library(pROC)
+library(dominanceanalysis)
+library(caTools)
+library(ROSE)
 ```
 
 # Introduction
@@ -125,7 +129,7 @@ hist(bank$pdays, ylab = 'Days Since Previous Campaign', main="Campaign Lag")
 The histogram above shows the distribution of the variable pdays Similarly to the variable previous, the distribution is highly skewed to the right.
 
 ```{r remove_outliers}
-bank2 = outlierKD2(bank, age, rm=T, histogram = F)
+bank2 = outlierKD2(bank, age, rm=T, histogram = T)
 ```
 
 ## QQ-plot
@@ -187,7 +191,7 @@ The bar chart above shows the number of yes-no responses from the deposit subscr
 
 
 ## Visualizations
-```{r}
+```{r, echo=FALSE}
 ### JOBS vs SUBSCRIBED DEPOSIT
 
 ggplot(bank2, aes(x = job, fill = y)) + geom_bar(colour = "black") + labs( x = "", y = "Count", fill = "Response") +
@@ -196,7 +200,7 @@ ggplot(bank2, aes(x = job, fill = y)) + geom_bar(colour = "black") + labs( x = "
 
 The bar chart above shows the distribution of Job Type for individuals who responded to the survey  From the graph, individuals who had a job type of management responded yes to the survey more than individuals with any other job type. The job type technician has the second most yes responses. The categories with the largest proportion of no responses are entrepreneur, housemaid, unemployed, self-employed, student, and unknown.
 
-```{r}
+```{r, echo=FALSE}
 ### MARTIAL STATUS vs SUBSCRIBED DEPOSIT
 ggplot(bank2, aes(x = marital, fill = y)) + geom_bar(colour = "black") + labs( x = "Marital Status", y = "Count", fill = "Response") +
   ggtitle("Distribution of Marital Status") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
@@ -205,7 +209,7 @@ ggplot(bank2, aes(x = marital, fill = y)) + geom_bar(colour = "black") + labs( x
 The bar chart above shows the distribution of survey responses based on marital status. Married individuals answered yes more frequently than single and divorced individuals. The vast majority of divorced individuals answered no.
 
 
-```{r}
+```{r, echo=FALSE}
 ### EDUCATION vs SUBSCRIBED DEPOSIT
 ggplot(bank2, aes(x = education, fill = y)) + geom_bar(colour = "black") + labs( x = "Education", y = "Count", fill = "Response") +
   ggtitle("Distribution of Education Level") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
@@ -213,13 +217,13 @@ ggplot(bank2, aes(x = education, fill = y)) + geom_bar(colour = "black") + labs(
 
 The bar chart above shows the distribution of yes and no responses based on education level. Individuals with secondary level education responded yes more frequently than individuals with primary, secondary, and unknown. The vast majority of individuals with only a primary level of education responded no. The same is the case for individuals with an unknown education level.
 
-```{r}
+```{r, echo=FALSE}
 ###  DEFAULT STATUS
 ggplot(bank2, aes(x = default, fill = y)) + geom_bar(colour = "black") + labs( x = "Default Status", y = "Count", fill = "Response") +
   ggtitle("Distribution of Default Status") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
 ```
 The bar chart above shows the distribution of yes and no responses based on an individual's default status. The bar chart shows that individuals who have no default status answered yes more frequently. Barely any of the individuals who have a default status answered no.
-```{r}
+```{r, echo=FALSE}
 ### DISTRIBUTION OF AGE
 ggplot(bank2, aes(x = age, fill = y)) + geom_histogram(colour = "black", bins = 30) + labs( x = "Distribution of Age", y = "Count", fill = "Response") +
   ggtitle("Distribution of Age") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
@@ -227,7 +231,7 @@ ggplot(bank2, aes(x = age, fill = y)) + geom_histogram(colour = "black", bins = 
 
 The histogram above shows the distribution of the age of individuals who answered the survey. Most responses came from individuals in the approximate age range of 18 to 28. Individuals in that age range also gave the most yes responses. As age increases, the number of survey responses, as well as the number of yes responses decreases.
 
-```{r}
+```{r, echo=FALSE}
 ggplot(bank, aes(x = balance, fill = y)) + geom_histogram(colour = "black") + labs( x = "Balance", y = "Count", fill = "Response") +
   ggtitle("Distribution of Balance") + theme(plot.title = element_text(hjust = 0.5, face = "bold"), aspect.ratio = 7/15) 
 ```
@@ -236,8 +240,6 @@ The histogram above shows the distribution of the balance of the individuals who
 
 ## Data Partition
 ```{r}
-library(dominanceanalysis)
-library(caTools)
 set.seed(123)
 sample <- sample.split(bank2$y, SplitRatio = 0.7)
 train <- subset(bank2, sample == TRUE)
@@ -249,16 +251,18 @@ test  <- subset(bank2, sample == FALSE)
 
 Let's start building the model with backward stepwise reduction. Here we would drop the column 'job', 'day' and 'month'.
 
-```{r model}
+```{r echo = FALSE, results='markup'}
 mybanklog <- glm(y ~ age+marital+education+default+balance+housing+loan+contact+duration+campaign+pdays+previous+poutcome, data = train, family = "binomial")
 summary(mybanklog)
+xkabledply(mybanklog, title = "Unbalanced Model with Many Features")
 ```
 
 We would drop predictors that have p-values < 0.05, since they do not have significant effect on the model.
 
-```{r model_refine}
+```{r echo = FALSE, results='markup'}
 mybanklog2 <- glm(y ~ balance+housing+loan+duration+campaign, data = train, family = "binomial")
 summary(mybanklog2)
+xkabledply(mybanklog2, title = "Refined Model After Stepwise Reduction")
 ```
 
 Balance, housing, loan, duration, campaign are statistically significant predictors. Balance and duration have positive coefficients meaning y is associated with higher balance and longer calls. Housing, loan, and campaign have negative coefficients, meaning y is associated with not having housing, not having loan and fewer times of campaign.
@@ -269,16 +273,16 @@ Since our training set is extremely unbalanced, with far more 0's than 1's in y,
 
 ```{r balance, results=T}
 #install.packages("ROSE")
-library(ROSE)
 bank_balanced_over <- ovun.sample(y ~., data = train, method = "over", N = 5600)$data
 table(bank_balanced_over$y)
 ```
 
 Construct the model with the balanced dataset.
-```{r}
+```{r echo = FALSE, results='markup'}
 # using balanced dataset
 mybanklog2b <- glm(y ~ balance+housing+loan+duration+campaign, data = bank_balanced_over, family = "binomial")
 summary(mybanklog2b)
+xkabledply(mybanklog2, title = "Model from Balanced Dataset")
 ```
 
 
@@ -287,7 +291,6 @@ summary(mybanklog2b)
 For this section we start off by obtaining the predicted value that a client will subscribe to a term deposit on both training and testing set, after that we’ll perform a quick evaluation on the training set by plotting the probability (score) estimated by our model with a double density plot.
 
 ```{r, include=TRUE}
-library(ggthemes)
 # prediction
 train$prediction <- predict(mybanklog2b, newdata = train, type = "response" )
 test$prediction  <- predict(mybanklog2b, newdata = test , type = "response" )
