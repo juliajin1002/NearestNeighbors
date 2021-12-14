@@ -32,6 +32,8 @@ library(pROC)
 library(dominanceanalysis)
 library(caTools)
 library(ROSE)
+library(ROCR)
+library(pscl)
 ```
 
 # Introduction
@@ -46,7 +48,7 @@ information about customers' current accounts like balance, housing, loan, and d
 
 * Given an unbalanced dataset, how much does a model built from a balanced dataset improve from the original model? 
 
-For these questions, our target variable is categorical: whether someone subscribed to the bank's product or not after engaging with an advertising campaign. Therefore, we cleaned, wrangled, and explored the bank's dataset and developed a logistic regression model to predict whether or not a customer subscribed to a bank term deposit after engaging with the marketing campaign. To deal with imbalanced responses from the observed marketing campaign, as there were many more 'No' than 'Yes' subscription responses, We used a combination of undersampling and oversampling techniques in our model development. Lastly we analyzed the best cutoff and minimized cost of our predictions, and explored the relative importance of each feature in our predictions. In this report we discuss in detail our methodology, results, and conclusions.
+For these questions, our target variable is categorical: whether someone subscribed to the bank's product or not after engaging with an advertising campaign. Therefore, we cleaned, wrangled, and explored the bank's dataset and developed a logistic regression model to predict whether or not a customer subscribed to a bank term deposit after engaging with the marketing campaign. In total, this dataset contained 4507 observations and 17 variables. To deal with imbalanced responses from the observed marketing campaign, as there were many more 'No' than 'Yes' subscription responses, We used a combination of undersampling and oversampling techniques in our model development. Lastly we analyzed the best cutoff and minimized cost of our predictions, and explored the relative importance of each feature in our predictions. In this report we discuss in detail our methodology, results, and conclusions.
 
 By developing a model that effectively predicts whether or not a customer is likely to subscribe to a certain product,
 we can help this Portuguese bank more effectively target their advertising efforts with the ultimate goal of decreasing
@@ -176,11 +178,12 @@ qqnorm(bank2$pdays, main = "Pdays: Normal Q-Q Plot") + theme(plot.title = elemen
 
 The plot above shows that the variable pday does not follow a normal distribution.
 
-```{r}
+```{r, echo=FALSE}
 # lets check yes vs no: subscribed a deposity yes/no
 ggplot(bank2, aes( x = y, fill = y)) + geom_bar(colour = "black") + labs(x = "Response", y = "Count", fill = "Response") +
   ggtitle("Subcribed a Deposit: YES/NO") + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
-prop.table(table(bank2$y))
+out <- prop.table(table(bank2$y))
+out
 # way more no than yes - not balanced 
 # will have to correct this
 ```
@@ -290,7 +293,7 @@ xkabledply(mybanklog2, title = "Model from Balanced Dataset")
 
 For this section we start off by obtaining the predicted value that a client will subscribe to a term deposit on both training and testing set, after that we’ll perform a quick evaluation on the training set by plotting the probability (score) estimated by our model with a double density plot.
 
-```{r, include=TRUE}
+```{r, echo=FALSE}
 # prediction
 train$prediction <- predict(mybanklog2b, newdata = train, type = "response" )
 test$prediction  <- predict(mybanklog2b, newdata = test , type = "response" )
@@ -311,12 +314,11 @@ Our objective is choosing a cutoff that minimizes the cost of our models associa
 ## Unbalanced model 
 ### Confusion matrix at 0.5
 ```{r, echo=F}
-library(pROC)
 test$banklogpred <- predict(mybanklog2, newdata = test, type = "response")
 ```
 
 Let's first look at how the confusion matrix looks like when cutoff = 0.5
-```{r, include=T}
+```{r, echo=FALSE}
 library(data.table)
 cutoff <- 0.5
 predict <- test$banklogpred
@@ -347,7 +349,7 @@ table(result$type)
 In our case, an FN means that a client subscribed to a term deposit but our model fails to detect that. This is an expensive mistake because it means our client is not taken care of. Our bank have to compensate a lot for their mistake and the client may not choose any service from our bank in the future. An FP means that a client did not subscribe to a term deposit and our model told us that they did. As for conducting this kind of mistake, we might simply waste 5 minutes on a phone call with someone who did not choose our service.
 
 Let's assign a value to FP and FN and compute the cost. Here we let the cost of FN be 200 and the cost of FP be 100.
-```{r}
+```{r, results=T}
 library(ROCR)
 cost.fp <- 100
 cost.fn <- 200
@@ -369,7 +371,7 @@ best_cutoff
 The optimal cutoff is at 0.199 and the total cost is 26200. The cost at cutoff of 0.5 is 31800.
 
 ### ROC plot & Cost plot
-```{r}
+```{r, echo=FALSE}
 normalize <- function(v) ( v - min(v) ) / diff( range(v) )
 col_ramp <- colorRampPalette( c( "green", "orange", "red", "black" ) )(100)   
 col_by_cost <- col_ramp[ ceiling( normalize(cost) * 99 ) + 1 ]
@@ -385,7 +387,7 @@ roc_plot
 
 The color of the ROC curve indicates the cost associated with that cutoff value, the greener the lower. Here it suggest the optimal cutoff be around 0.12. 
 
-```{r}
+```{r, echo=FALSE}
 cost_plot <- ggplot( cost_dt, aes( cutoff, cost ) ) +
                  geom_line( color = "blue", alpha = 0.5 ) +
                  geom_point( color = col_by_cost, size = 4, alpha = 0.5 ) +
@@ -399,7 +401,7 @@ The cost plot calculates the the associated cost for choosing different cutoff v
 
 Reconstruct the confusion matrix at the opitmal cutoff (of the cost function).
 
-```{r}
+```{r, echo=FALSE}
 cutoff <- 0.199
 predict <- test$banklogpred
 actual  <- relevel( as.factor( test$y ), "1" )
@@ -418,7 +420,7 @@ plot <- ggplot( result, aes( actual, predict, color = type ) ) +
 plot
 ```
 
-```{r}
+```{r, results=T}
 table(result$type)
 ```
 
@@ -427,7 +429,7 @@ Although we almost have four times the cases of FP, we reduce the cases of FN by
 ## Balanced model
 
 ### Confusion matrix at cutoff = 0.5
-```{r}
+```{r, echo=FALSE}
 cutoff <- 0.5
 predict <- test$prediction
 actual  <- relevel( as.factor( test$y ), "1" )
@@ -449,13 +451,12 @@ plot
 With a balanced dataset, we have fewer cases of FN, but more cases of FP. We want to see if by raising the cutoff, we can decrease the cases of FP significantly by have a reasonably more cases of FN.
 
 Below are the exact number of each type of case.
-```{r}
+```{r, results=T}
 table(result$type)
 ```
 
 ### Find the best cutoff and minimal cost
-```{r cutoff2}
-library(ROCR)
+```{r cutoff2, results=T}
 cost.fp <- 100
 cost.fn <- 200
 # At cutoff = 0.5, cost = 200* 41 + 100 * 236 = 31800
@@ -477,7 +478,7 @@ best_cutoff
 The optimal cutoff is 0.703. The minimal cost is 25800. At cutoff = 0.5, the cost is 31800.
 
 ### ROC plot & Cost plot
-```{r, include=TRUE}
+```{r, echo=FALSE}
 normalize <- function(v) ( v - min(v) ) / diff( range(v) )
 col_ramp <- colorRampPalette( c( "green", "orange", "red", "black" ) )(100)   
 col_by_cost <- col_ramp[ ceiling( normalize(cost) * 99 ) + 1 ]
@@ -493,7 +494,7 @@ roc_plot
 
 The ROC curve suggests that the optimal cutoff be around 0.11.
 
-```{r}
+```{r, echo=FALSE}
 cost_plot <- ggplot( cost_dt, aes( cutoff, cost ) ) +
                  geom_line( color = "blue", alpha = 0.5 ) +
                  geom_point( color = col_by_cost, size = 4, alpha = 0.5 ) +
@@ -506,7 +507,7 @@ cost_plot
 The cost plot implies that the optimal cutoff is at 0.703. This is the most realistic cutoff we would choose since in real-life scenarios we may associate a 70% probability to success.
 
 Reconstruct the confusion matrix at the optimal cutoff (of the cost function).
-```{r}
+```{r, echo=FALSE}
 cutoff <- 0.703
 predict <- test$prediction
 actual  <- relevel( as.factor( test$y ), "1" )
@@ -525,7 +526,7 @@ plot <- ggplot( result, aes( actual, predict, color = type ) ) +
 plot
 ```
 
-```{r}
+```{r, results=T}
 table(result$type)
 ```
 
@@ -533,7 +534,7 @@ We have 31 more cases of FN but only less than half the cases of FP. We also red
 
 # Interpretation and Reasoning
 
-```{r}
+```{r, results=T}
 expcoeff = exp(coef(mybanklog2b))
 # expcoeff
 xkabledply( as.table(expcoeff), title = "Exponential of coefficients" )
@@ -544,8 +545,7 @@ From this table, every unit increase in balance means the probability of success
 ## McFadden
 
 Take a look at the McFadden value.
-```{r McFb}
-library(pscl)
+```{r McFb, results=T}
 pR2(mybanklog2b)
 ```
 
@@ -558,7 +558,7 @@ We would like to determine the relative importance of predictors in our model.
 ### Deviance
 
 Let's first interpret the table of null deviance.
-```{r anova}
+```{r anova, results=T}
 anova(mybanklog2b, test="Chisq")
 ```
 
@@ -567,7 +567,6 @@ In our case, we can see that adding duration alone reduces the deviance drastica
 
 ### Dominance analysis
 ```{r da, echo=F}
-library(dominanceanalysis)
 dabank <- dominanceAnalysis(mybanklog2b)
 ```
 
@@ -583,11 +582,11 @@ This matrix summarizes the relation between each pair of predictors. If the valu
 Here, duration is the most dominant predictor, housing second and there is no significant dominance amongst the rest three predictors.
 
 #### General dominance plot
-```{r}
+```{r, results=T}
 averageContribution(dabank, fit.functions = "r2.m")
 ```
 
-```{r}
+```{r, echo=FALSE}
 plot(dabank, which.graph ="general",fit.function = "r2.m")
 ```
 
@@ -595,7 +594,12 @@ To determine general dominance, we compute the mean of each predictor’s condit
 
 # Conclusion
 
-Loris ipsum.
+Ultimately, we were able to build a logistic regression model that predicted whether or not bank customers are likely to subscribe to a term deposit. Additionally, by balancing this largely imbalanced dataset and optimizing the cutoff, we were able to improve our model as measured by comparing AUC and McFadden scores across models. 
+
+Lastly, by conducting a dominance analysis, we found that the single most important predictor in our model was duration of the call. This has major implications for marketing campaigns -- namely the longer a telemarketer can keep a customer on the phone, the more likely they are to purchase or subscribe to a product. 
+
+Based on our findings, we hope that this Portuguese bank can more effectively target their advertising campaigns, decrease costs, and increase their revenue.
+
 
 # Reference
 Useful functions when working with logistic regression
