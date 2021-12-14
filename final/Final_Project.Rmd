@@ -34,7 +34,7 @@ library(pROC)
 
 Advertising drives business, but even with advances in social media and advertising technology, we have a limited understanding of what influences customers to buy or not buy a certain product. If companies could predict whether an advertising campaign is likely to influence a potential customer to buy their product, they could more effectively target their campaigns to the most receptive customers, decrease their marketing costs, and increase their revenue. 
 
-To put these goals into practice, we analyzed a Portuguese bank's marketing campaign that took place between May 2008 and November 2010. During the campaign, telemarketers called potential customers to persuade them to subscribe to a bank term deposit. During these calls, they recorded key demographic information, such as age, job, marital and education status. Telemarketers also noted
+To put these goals into practice, we analyzed a Portuguese bank's marketing campaign that took place between May 2008 and November 2010. During the campaign, telemarketers called potential customers to persuade them to subscribe to a bank term deposit. During these calls, they recorded key demographic information such as age, job, marital and education status. Telemarketers also noted
 information about customers' current accounts like balance, housing, loan, and default records, as well as data about the campaign itself including the timing and duration of their call. Critically, they also documented the outcome of their efforts: whether or not a potential customer subscribed to the bank term deposit. Using this dataset, we worked to answer the following questions:
 
 
@@ -42,10 +42,10 @@ information about customers' current accounts like balance, housing, loan, and d
 
 * Given an unbalanced dataset, how much does a model built from a balanced dataset improve from the original model? 
 
-For these questions, our target variable is categorical: whether someone subscribed to the bank's product or not after engaging with an advertising campaign. Therefore, we cleaned, wrangled, and explored the bank's dataset and developed a logistic regression model to predict whether or not a customer subscribed to a bank term deposit. To deal with imbalanced responses from the observed marketing campaign, as there were many more 'No' than 'Yes' subscription responses, We also used a combination of undersampling and oversampling techniques in our model development. Lastly we analyze the best cutoff and minimized cost of our prediction, and explored the relative importance of each feature in our predictions. In this report we discuss in detail our methodology, results, and conclusions.
+For these questions, our target variable is categorical: whether someone subscribed to the bank's product or not after engaging with an advertising campaign. Therefore, we cleaned, wrangled, and explored the bank's dataset and developed a logistic regression model to predict whether or not a customer subscribed to a bank term deposit after engaging with the marketing campaign. To deal with imbalanced responses from the observed marketing campaign, as there were many more 'No' than 'Yes' subscription responses, We used a combination of undersampling and oversampling techniques in our model development. Lastly we analyzed the best cutoff and minimized cost of our predictions, and explored the relative importance of each feature in our predictions. In this report we discuss in detail our methodology, results, and conclusions.
 
 By developing a model that effectively predicts whether or not a customer is likely to subscribe to a certain product,
-we can help this Portuguese bank more effectively target their advertising efforts, with the ultimate goal of decreasing
+we can help this Portuguese bank more effectively target their advertising efforts with the ultimate goal of decreasing
 their marketing costs and increasing their subscription rates and revenue.
 
 ```{r setup, include=FALSE}
@@ -82,45 +82,44 @@ bank$previous <- as.numeric(bank$previous)
 bank$pdays <- as.numeric(bank$pdays)
 ```
 
-```{r}
+```{r, echo=FALSE}
 # Checking for outliers
-boxplot(bank$age,ylab = 'age') 
+boxplot(bank$age,ylab = 'Age', main="Customer Age") 
 ```
+The boxplot above shows the distribution of the variable age and if it contains any outliers. It can be seen that the boxplot is skewed to the right and contains outliers at the upper end of the distribution.
 
-The boxplot above shows the distribution of the variable age and if it contains any outliers. It can be seen that the boxplot is skewed to the right and contains outliers at the upper end of the distribution
-
-```{r}
-boxplot(bank$balance,ylab = 'balance')
+```{r, echo=FALSE}
+boxplot(bank$balance,ylab = 'balance', main="Customer Account Balance")
 ```
 
 The boxplot above shows the distribution of the variable balance and if it contains any outliers. It can be seen that the boxplot is slightly skewed to the right. There are no outliers present.
 
-```{r}
-boxplot(bank$day, ylab = 'day')
+```{r, echo=FALSE}
+boxplot(bank$day, ylab = 'Day in a Month', main="Day of Call")
 ```
 
 The boxplot above shows the distribution of the variable dat and if it contains any outliers. It can be seen that the boxplot looks normally distributed and contains no outliers.
 
-```{r}
-boxplot(bank$duration, ylab = 'duration')
+```{r, echo=FALSE}
+boxplot(bank$duration, ylab = 'minutes', main="Duration of Call")
 ```
 
 The boxplot above shows the distribution of the variable duration and if it contains any outliers. It can be seen that the boxplot is highly skewed to the right and contains many outliers at the upper end of the distribution.
 
-```{r}
-boxplot(bank$campaign, ylab = 'campaign')
+```{r, echo=FALSE}
+boxplot(bank$campaign, ylab = 'number of contacts', main="Campaign Efforts")
 ```
 
 The boxplot above shows the distribution of the variable campaign and if it contains any outliers. It can be seen that the boxplot is skighly kewed to the right and contains many outliers at the upper end of the distribution.
 
-```{r}
-hist(bank$previous, ylab = 'previous')
+```{r, echo=FALSE}
+hist(bank$previous, ylab = 'Call Count Before Campaign', main="Prior Contacts")
 ```
 
 The histogram above shows the distribution of the variable previous. It can be seen that the distribution is highly skewed to the right.
 
-```{r}
-hist(bank$pdays, ylab = 'pdays')
+```{r, echo=FALSE}
+hist(bank$pdays, ylab = 'Days Since Previous Campaign', main="Campaign Lag")
 ```
 
 The histogram above shows the distribution of the variable pdays Similarly to the variable previous, the distribution is highly skewed to the right.
