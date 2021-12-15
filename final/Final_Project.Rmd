@@ -66,6 +66,51 @@ options(scientific=T, digits = 3)
 # ‘scipen’: integer. A penalty to be applied when deciding to print numeric values in fixed or exponential notation.  Positive values bias towards fixed and negative towards scientific notation: fixed notation will be preferred unless it is more than ‘scipen’ digits wider.
 # use scipen=999 to prevent scientific notation at all times
 ```
+
+# Dataset dictionary
+bank client data:
+
+1 - age (numeric)
+
+2 - job : type of job (categorical: "admin.","unknown","unemployed","management","housemaid","entrepreneur","student",
+"blue-collar","self-employed","retired","technician","services")
+
+3 - marital : marital status (categorical: "married","divorced","single"; note: "divorced" means divorced or widowed)
+
+4 - education (categorical: "unknown","secondary","primary","tertiary")
+
+5 - default: has credit in default? (binary: "yes","no")
+
+6 - balance: average yearly balance, in euros (numeric)
+
+7 - housing: has housing loan? (binary: "yes","no")
+
+8 - loan: has personal loan? (binary: "yes","no")
+
+related with the last contact of the current campaign:
+
+9 - contact: contact communication type (categorical: "unknown","telephone","cellular")
+
+10 - day: last contact day of the month (numeric)
+
+11 - month: last contact month of year (categorical: "jan", "feb", "mar", …, "nov", "dec")
+
+12 - duration: last contact duration, in seconds (numeric)
+
+other attributes:
+
+13 - campaign: number of contacts performed during this campaign and for this client (numeric, includes last contact)
+
+14 - pdays: number of days that passed by after the client was last contacted from a previous campaign (numeric, -1 means client was not previously contacted)
+
+15 - previous: number of contacts performed before this campaign and for this client (numeric)
+
+16 - poutcome: outcome of the previous marketing campaign (categorical: "unknown","other","failure","success")
+
+Output variable (desired target):
+
+17 - y - has the client subscribed a term deposit? (binary: "yes","no")
+
 # EDA
 ## The beginning
 
@@ -241,7 +286,9 @@ ggplot(bank, aes(x = balance, fill = y)) + geom_histogram(colour = "black") + la
 
 The histogram above shows the distribution of the balance of the individuals who responded to the survey. Most responses came from individuals with a balance of about $250. As the balance increases, the number of responses decreases. Individuals with a balance of about 250 gave the most yes responses, whereas almost no individuals with a 0 balance or a balance above about 2100 responded yes.
 
-## Data Partition
+# Data Partition
+
+Split the data set into training and test sets with the size of training set = 0.7.
 ```{r}
 set.seed(123)
 sample <- sample.split(bank2$y, SplitRatio = 0.7)
@@ -252,7 +299,7 @@ test  <- subset(bank2, sample == FALSE)
 # Model Construction 
 ## Without balancing
 
-Let's start building the model with backward stepwise reduction. Here we would drop the column 'job', 'day' and 'month'.
+Let's start building the model with backward stepwise reduction using the training set. Here we would drop the column 'job', 'day' and 'month'.
 
 ```{r echo = FALSE, results='markup'}
 mybanklog <- glm(y ~ age+marital+education+default+balance+housing+loan+contact+duration+campaign+pdays+previous+poutcome, data = train, family = "binomial")
@@ -274,7 +321,7 @@ Balance, housing, loan, duration, campaign are statistically significant predict
 
 Since our training set is extremely unbalanced, with far more 0's than 1's in y, let's construct a model with a more balanced training set. Here, using the `ovun.sample` function in the `ROSE` package, we would under-sample cases of 0 and over-sample cases of 1.
 
-```{r balance, results=T}
+```{r balance, echo=FALSE}
 #install.packages("ROSE")
 bank_balanced_over <- ovun.sample(y ~., data = train, method = "over", N = 5600)$data
 table(bank_balanced_over$y)
@@ -289,9 +336,9 @@ xkabledply(mybanklog2, title = "Model from Balanced Dataset")
 ```
 
 
-# Training Set's Predicted Score
+### Training Set's Predicted Score
 
-For this section we start off by obtaining the predicted value that a client will subscribe to a term deposit on both training and testing set, after that we’ll perform a quick evaluation on the training set by plotting the probability (score) estimated by our model with a double density plot.
+We’ll perform a quick evaluation on the training set by plotting the probability (score) estimated by our model with a double density plot.
 
 ```{r, echo=FALSE}
 # prediction
@@ -309,15 +356,16 @@ theme_economist()
 Given that our model’s final objective is to classify new instances into one of two categories, whether the client will subscribe to a term deposit, we will want the model to give high scores to positive instances and low scores otherwise. Thus for a ideal double density plot you want the distribution of scores to be separated, with the score of the negative instances to be on the left and the score of the positive instance to be on the right. In this case, our model indeed displays this pattern.
 
 # Cost of our models
-Our objective is choosing a cutoff that minimizes the cost of our models associated with making FP's and FN's.
+
+Our objective is choosing a cutoff that minimizes the cost of our models on the test set generated from FP's and FN's.
 
 ## Unbalanced model 
-### Confusion matrix at 0.5
+
 ```{r, echo=F}
 test$banklogpred <- predict(mybanklog2, newdata = test, type = "response")
 ```
 
-Let's first look at how the confusion matrix looks like when cutoff = 0.5
+### Confusion matrix at cutoff = 0.5
 ```{r, echo=FALSE}
 library(data.table)
 cutoff <- 0.5
@@ -344,7 +392,7 @@ Below are the exact number of each type of case.
 table(result$type)
 ```
 
-### Find the best cutoff and minimal cost
+### Optimal cutoff & minimal cost
 
 In our case, an FN means that a client subscribed to a term deposit but our model fails to detect that. This is an expensive mistake because it means our client is not taken care of. Our bank have to compensate a lot for their mistake and the client may not choose any service from our bank in the future. An FP means that a client did not subscribe to a term deposit and our model told us that they did. As for conducting this kind of mistake, we might simply waste 5 minutes on a phone call with someone who did not choose our service.
 
@@ -385,7 +433,7 @@ roc_plot <- ggplot( roc_dt, aes( fpr, tpr ) ) +
 roc_plot
 ```
 
-The color of the ROC curve indicates the cost associated with that cutoff value, the greener the lower. Here it suggest the optimal cutoff be around 0.12. 
+The color of the ROC curve indicates the cost associated with that cutoff value, the greener the lower. Here it suggests the optimal cutoff be around 0.12. 
 
 ```{r, echo=FALSE}
 cost_plot <- ggplot( cost_dt, aes( cutoff, cost ) ) +
@@ -455,7 +503,7 @@ Below are the exact number of each type of case.
 table(result$type)
 ```
 
-### Find the best cutoff and minimal cost
+### Optimal cutoff & minimal cost
 ```{r cutoff2, results=T}
 cost.fp <- 100
 cost.fn <- 200
@@ -534,7 +582,8 @@ We have 31 more cases of FN but only less than half the cases of FP. We also red
 
 # Interpretation and Reasoning
 
-```{r, results=T}
+## Coefficients
+```{r, echo=FALSE}
 expcoeff = exp(coef(mybanklog2b))
 # expcoeff
 xkabledply( as.table(expcoeff), title = "Exponential of coefficients" )
@@ -544,8 +593,7 @@ From this table, every unit increase in balance means the probability of success
 
 ## McFadden
 
-Take a look at the McFadden value.
-```{r McFb, results=T}
+```{r McF, results=T}
 pR2(mybanklog2b)
 ```
 
@@ -572,7 +620,7 @@ dabank <- dominanceAnalysis(mybanklog2b)
 
 #### Complete dominance matrix
 
-Let's display the complete dominance matrix.
+Here is the complete dominance matrix.
 ```{r, results=T}
 dominanceMatrix(dabank, type="complete",fit.functions = "r2.m", ordered=TRUE)
 ```
@@ -586,7 +634,7 @@ Here, duration is the most dominant predictor, housing second and there is no si
 averageContribution(dabank, fit.functions = "r2.m")
 ```
 
-```{r, echo=FALSE}
+```{r}
 plot(dabank, which.graph ="general",fit.function = "r2.m")
 ```
 
@@ -602,6 +650,8 @@ Based on our findings, we hope that this Portuguese bank can more effectively ta
 
 
 # Reference
+Bank Marketing Campaign https://www.kaggle.com/edith2021/bank-marketing-campaign
+
 Useful functions when working with logistic regression
 https://github.com/ethen8181/machine-learning/blob/master/unbalanced/unbalanced_code/unbalanced_functions.R
 
