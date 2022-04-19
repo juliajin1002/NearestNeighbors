@@ -1,6 +1,6 @@
 # Portuguese Bank Marketing Campaign
 
-Final Project report: file:///Users/chaoranjin/Documents/NearestNeighbors/final/Final_Project.html
+Final Project report: [link](file:///Users/chaoranjin/Documents/NearestNeighbors/final/Final_Project.html)
 
 We analyzed a Portuguese bank’s marketing campaign that took place between May 2008 and November 2010. 
 During the campaign, telemarketers called potential customers to persuade them to subscribe to a bank term deposit. 
